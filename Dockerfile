@@ -18,7 +18,8 @@ COPY --from=api /app ./
 COPY --from=web /web/dist ./wwwroot
 ENV ASPNETCORE_HTTP_PORTS=8080 \
     ASPNETCORE_ENVIRONMENT=Production \
-    DOTNET_gcServer=0
+    DOTNET_gcServer=0 \
+    DOTNET_GCHeapHardLimitPercent=0x46
 USER app
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "ClerkAssistant.Api.dll"]

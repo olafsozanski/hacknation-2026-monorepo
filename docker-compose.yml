@@ -1,7 +1,10 @@
 services:
   db:
-    image: pgvector/pgvector:pg17
+    image: pgvector/pgvector:pg17@sha256:b513c48566e4777cd3370451400000c78eda6a08131d68f4c31d4a76f27bd8fd
     restart: unless-stopped
+    mem_limit: 2g
+    security_opt:
+      - no-new-privileges:true
     environment:
       POSTGRES_DB: udip
       POSTGRES_USER: udip
@@ -17,6 +20,15 @@ services:
   app:
     build: .
     restart: unless-stopped
+    mem_limit: 2g
+    cpus: 2
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       db:
         condition: service_healthy
@@ -24,6 +36,7 @@ services:
       ConnectionStrings__Database: Host=db;Database=udip;Username=udip;Password=${POSTGRES_PASSWORD};GSS Encryption Mode=Disable
       Security__RequireHttps: ${REQUIRE_HTTPS:-false}
       Security__TrustForwardedHeaders: ${TRUST_FORWARDED_HEADERS:-false}
+      Security__KnownProxies__0: ${KNOWN_PROXY:-127.0.0.1}
       Seed__AdminPassword: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
       Seed__DemoData: ${DEMO_DATA:-false}
       Seed__DemoPassword: ${DEMO_PASSWORD:-}
@@ -36,6 +49,7 @@ services:
       Ai__ChatModel: ${AI_CHAT_MODEL:-gpt-5-mini}
       Ai__EmbeddingModel: ${AI_EMBEDDING_MODEL:-text-embedding-3-small}
       Ai__IsLocal: ${AI_IS_LOCAL:-false}
+      Ai__AllowExternalProcessing: ${AI_ALLOW_EXTERNAL_PROCESSING:-false}
     ports:
       - "${APP_BIND:-127.0.0.1}:${APP_PORT:-8080}:8080"
 
@@ -43,6 +57,8 @@ services:
     image: ollama/ollama:latest
     profiles: ["local-ai"]
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - ollama-models:/root/.ollama
 
