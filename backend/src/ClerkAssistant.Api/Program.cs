@@ -22,7 +22,7 @@ builder.Services.Configure<SeedOptions>(builder.Configuration.GetSection(SeedOpt
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddProblemDetails();
-builder.Services.AddExceptionHandler<ConcurrencyExceptionHandler>();
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddValidation();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();

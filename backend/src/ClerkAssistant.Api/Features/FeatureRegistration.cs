@@ -17,6 +17,8 @@ public static class FeatureRegistration
 {
     public static IServiceCollection AddFeatures(this IServiceCollection services) =>
         services
+            .AddAuthFeature()
+            .AddUsersFeature()
             .AddRequestsFeature()
             .AddDocumentsFeature()
             .AddDepartmentsFeature()

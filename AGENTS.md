@@ -35,23 +35,33 @@ Development users are seeded when `Seed:DemoData` is true (see `appsettings.Deve
 
 ## Backend conventions
 
-- One feature = one folder under `Features/`. Endpoints are static `Map<Feature>Endpoints` extension
-  methods on the `/api` route group; services are registered in `Add<Feature>Feature`.
-- Contracts are C# records in `<Feature>Contracts.cs`; validation uses DataAnnotations (`AddValidation`).
-- Use `TypedResults` and `Results<...>` return types. Errors are ProblemDetails with Polish messages
-  (they are shown to clerks). Code, identifiers and logs stay in English.
+Layering inside a feature folder (`Features/<Feature>/`), see `Features/Departments` and `Features/Users`
+for the reference implementation:
+
+| File | Responsibility |
+|---|---|
+| `<Feature>Contracts.cs` | Request/response records (the API contract). DataAnnotations for input validation. |
+| `<Feature>Endpoints.cs` | `Add<Feature>Feature` (DI registration) and `Map<Feature>Endpoints`. Endpoints only bind input, call a service and wrap the result (`TypedResults.Created/NoContent/File`). No queries, no rules, no mapping. |
+| `<Name>Service.cs` | Business logic and data access (EF Core). Returns contract DTOs. Signals expected failures with `NotFoundException`, `ValidationException` (field → Polish message), `ConflictException`, `AuthenticationFailedException`; `ApiExceptionHandler` turns them into ProblemDetails. |
+| `<Name>Mapper.cs` | Mapperly (`[Mapper] static partial class`) entity → DTO mappings. Values computed by a service (e.g. urgency, flags) are passed as extra mapping parameters. Every target member must be mapped (enforced at build time). |
+
+- Never hand-write `new SomeDto(entity.A, entity.B, …)` in endpoints or services — add a mapper method.
+- Contracts validation uses DataAnnotations (`AddValidation`); cross-field rules live in services (`ValidationErrors.ThrowIfAny()`).
+- Error messages shown to clerks are Polish. Code, identifiers and logs stay in English.
 - Every `/api` endpoint requires an authenticated user by default; admin endpoints use
   `.RequireAuthorization(Roles.Admin)`. Mutating requests are CSRF-protected by `AntiforgeryFilter`.
 - Write changes worth tracing to `AuditLog.Record(...)` and save them in the same `SaveChangesAsync`.
 - Optimistic concurrency: `InfoRequest.Version` / `ResponseDraft.Version` map to `xmin`; clients send
-  the version back, a conflict becomes HTTP 409 via `ConcurrencyExceptionHandler`.
+  the version back, a conflict becomes HTTP 409. Background jobs must not update these rows
+  (embeddings live in `request_embeddings` for that reason).
 - Dates of the register are `DateOnly` in Europe/Warsaw (`AppClock.Today`). Never use `DateTime.Now`.
 - Use Postgres for everything it can do: full-text search (`search_vector`, config `simple`),
   trigram similarity (`pg_trgm`), vectors (`pgvector`), files (`bytea`). Do not add external services.
-- AI goes through `AiClients` (OpenAI-compatible: OpenAI or Ollama). Always handle `IsEnabled == false`
-  and AI failures with a deterministic fallback plus a warning; AI output is a suggestion only.
+- AI goes through `AiGateway`/`AiClients` (OpenAI-compatible: OpenAI or Ollama). Always handle AI being
+  disabled or failing with a deterministic fallback plus a warning; AI output is a suggestion only.
 - Treat uploaded documents and AI output as untrusted: never execute or render them as HTML, never
-  log their content, wrap them in clear delimiters in prompts.
+  log their content, wrap them in clear delimiters in prompts (`PromptText`).
+- Letters follow the city hall's format; build headers, salutations and footers with `LetterLayout`.
 - No comments that restate the code. Prefer small, well-named methods.
 
 ## Frontend conventions

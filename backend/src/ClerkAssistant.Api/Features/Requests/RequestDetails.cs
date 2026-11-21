@@ -51,7 +51,7 @@ public static class RequestDetails
             request.Status,
             Deadlines.UrgencyOf(request, today),
             Deadlines.DaysLeft(request.EffectiveDueOn, today),
-            UserSummary.From(request.Assignee),
+            request.Assignee.ToSummaryOrNull(),
             request.Departments.OrderBy(d => d.Department.Symbol, StringComparer.Ordinal).Select(d => d.ToDto()).ToArray(),
             documents,
             draft is null

@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+using ValidationErrors = ClerkAssistant.Api.Features.Requests.ValidationErrors;
+
 namespace ClerkAssistant.Api.Features.Documents;
 
 public static class DocumentsEndpoints
