@@ -59,7 +59,7 @@ test('standalone anonymisation hides personal data in the exported document', as
     .getByLabel('Tekst do anonimizacji')
     .fill('Wnioskodawca: Jan Kowalski, PESEL 44051401359, tel. 600 100 200, e-mail jan.kowalski@example.com.')
   await page.getByRole('button', { name: 'Wykryj dane do ukrycia' }).click()
-  await expect(page.getByRole('heading', { name: 'Anonimizacja' })).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByRole('heading', { name: 'Anonimizacja', exact: true })).toBeVisible({ timeout: 30_000 })
   await page.getByRole('button', { name: 'Ukryj wszystkie sugestie' }).click()
 
   const download = page.waitForEvent('download')
