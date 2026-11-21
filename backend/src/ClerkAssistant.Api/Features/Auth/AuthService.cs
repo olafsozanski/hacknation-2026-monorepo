@@ -30,7 +30,8 @@ public sealed class AuthService(
     public async Task<SessionResponse> GetSessionAsync()
     {
         var user = Http.User.Identity?.IsAuthenticated == true ? await users.GetUserAsync(Http.User) : null;
-        return new SessionResponse(user is { IsActive: true } ? await ToSessionUserAsync(user) : null, IssueToken());
+        var sessionUser = user is { IsActive: true } ? await ToSessionUserAsync(user) : null;
+        return sessionUser.ToSessionResponse(IssueToken());
     }
 
     public async Task<SessionResponse> LoginAsync(LoginRequest request)
@@ -63,7 +64,7 @@ public sealed class AuthService(
         await signIn.SignInWithClaimsAsync(user, isPersistent: false, [SessionLifetime.CreateClaim(clock.Now)]);
         Http.User = await signIn.CreateUserPrincipalAsync(user);
         await RecordAsync(user.Id, userName, "auth.login", null);
-        return new SessionResponse(await ToSessionUserAsync(user), IssueToken());
+        return (await ToSessionUserAsync(user)).ToSessionResponse(IssueToken());
     }
 
     public async Task<SessionResponse> LogoutAsync()
@@ -76,7 +77,7 @@ public sealed class AuthService(
 
         await signIn.SignOutAsync();
         Http.User = new ClaimsPrincipal(new ClaimsIdentity());
-        return new SessionResponse(null, IssueToken());
+        return ((SessionUser?)null).ToSessionResponse(IssueToken());
     }
 
     public async Task ChangePasswordAsync(ChangePasswordRequest request)
