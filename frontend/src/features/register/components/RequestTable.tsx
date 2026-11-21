@@ -1,4 +1,4 @@
-import { Avatar, Box, Flex, Link, Table, Text, chakra } from '@chakra-ui/react'
+import { Avatar, Box, Link, Table, Text, chakra } from '@chakra-ui/react'
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link as RouterLink, useNavigate } from 'react-router'
@@ -59,16 +59,19 @@ export function RequestTable({ items, caption }: { items: RequestListItem[]; cap
 
   return (
     <Table.ScrollArea borderWidth="1px" borderColor="border" borderRadius="md" bg="bg.panel">
-      <Table.Root size="md" interactive stickyHeader>
+      <Table.Root size="sm" interactive stickyHeader>
         <Table.Caption srOnly>{caption}</Table.Caption>
         <Table.Header>
           <Table.Row bg="bg.muted">
             <SortHeader label="Lp." sortKey="sequenceNumber" sort={sort} onSort={toggleSort} />
-            <Table.ColumnHeader>Znak sprawy i przedmiot wniosku</Table.ColumnHeader>
-            <SortHeader label="Wpłynął" sortKey="receivedOn" sort={sort} onSort={toggleSort} />
+            <Table.ColumnHeader whiteSpace="nowrap">Numer sprawy</Table.ColumnHeader>
+            <Table.ColumnHeader>Wnioskodawca</Table.ColumnHeader>
+            <Table.ColumnHeader>Przedmiot zapytania</Table.ColumnHeader>
+            <SortHeader label="Data wpływu" sortKey="receivedOn" sort={sort} onSort={toggleSort} />
             <SortHeader label="Termin odpowiedzi" sortKey="effectiveDueOn" sort={sort} onSort={toggleSort} />
+            <Table.ColumnHeader whiteSpace="nowrap">Data odpowiedzi</Table.ColumnHeader>
+            <Table.ColumnHeader whiteSpace="nowrap">Pozostało dni</Table.ColumnHeader>
             <SortHeader label="Status" sortKey="status" sort={sort} onSort={toggleSort} />
-            <Table.ColumnHeader hideBelow="xl">Wydziały</Table.ColumnHeader>
             <Table.ColumnHeader textAlign="center">Prowadzi</Table.ColumnHeader>
           </Table.Row>
         </Table.Header>
@@ -90,47 +93,48 @@ export function RequestTable({ items, caption }: { items: RequestListItem[]; cap
                   fontVariantNumeric="tabular-nums"
                   color="fg.muted"
                   boxShadow={highlight ? `inset 4px 0 0 var(--chakra-colors-${highlight.accent.replace('.', '-')})` : undefined}
-                  w="16"
                 >
                   {item.sequenceNumber}
                 </Table.Cell>
-                <Table.Cell minW="80" maxW="xl">
-                  <Text fontSize="xs" color="fg.muted" fontWeight="semibold" letterSpacing="wide">
-                    {item.caseNumber}
-                  </Text>
-                  <Link asChild fontWeight="semibold" color="fg" lineClamp={2} _hover={{ color: 'brand.fg', textDecoration: 'underline' }}>
-                    <RouterLink to={`/wnioski/${item.id}`}>{item.subject}</RouterLink>
+                <Table.Cell whiteSpace="nowrap">
+                  <Link asChild fontWeight="semibold" color="brand.fg" textDecoration="underline" textUnderlineOffset="2px">
+                    <RouterLink to={`/wnioski/${item.id}`}>{item.caseNumber}</RouterLink>
                   </Link>
-                  {item.requesterName && (
-                    <Text fontSize="sm" color="fg.muted" truncate>
-                      {item.requesterName}
+                </Table.Cell>
+                <Table.Cell maxW="44">
+                  <Text lineClamp={2} title={item.requesterName ?? undefined}>
+                    {item.requesterName ?? '—'}
+                  </Text>
+                </Table.Cell>
+                <Table.Cell minW="56">
+                  <Text lineClamp={2} title={item.subject}>
+                    {item.subject}
+                  </Text>
+                  {item.departmentSymbols.length > 0 && (
+                    <Text fontSize="xs" color="fg.muted" mt="0.5">
+                      Wydziały: {item.departmentSymbols.join(', ')}
                     </Text>
                   )}
                 </Table.Cell>
                 <Table.Cell whiteSpace="nowrap" fontVariantNumeric="tabular-nums">
                   {formatDate(item.receivedOn)}
                 </Table.Cell>
-                <Table.Cell whiteSpace="nowrap">
-                  <Flex direction="column" gap="1" align="flex-start">
-                    <Text fontVariantNumeric="tabular-nums" fontWeight="semibold">
-                      {item.status === 'ResponseSent' ? formatDate(item.respondedOn) : formatDate(item.effectiveDueOn)}
-                      {item.status === 'ResponseSent' && (
-                        <Box as="span" srOnly>
-                          {' '}
-                          (data udzielenia odpowiedzi)
-                        </Box>
-                      )}
+                <Table.Cell whiteSpace="nowrap" fontVariantNumeric="tabular-nums" fontWeight="semibold">
+                  {formatDate(item.effectiveDueOn)}
+                  {item.extensionDays && (
+                    <Text fontSize="xs" color="fg.muted" fontWeight="normal">
+                      ustawowo {formatDate(item.dueOn)}
                     </Text>
-                    <DeadlineBadge urgency={item.urgency} daysLeft={item.daysLeft} />
-                  </Flex>
+                  )}
+                </Table.Cell>
+                <Table.Cell whiteSpace="nowrap" fontVariantNumeric="tabular-nums">
+                  {item.respondedOn ? formatDate(item.respondedOn) : <Text as="span" color="fg.subtle">—</Text>}
                 </Table.Cell>
                 <Table.Cell>
-                  <StatusBadge status={item.status} extensionDays={item.extensionDays} short />
+                  <DeadlineBadge urgency={item.urgency} daysLeft={item.daysLeft} />
                 </Table.Cell>
-                <Table.Cell hideBelow="xl">
-                  <Text fontSize="sm" fontWeight="medium" color={item.departmentSymbols.length ? 'fg' : 'fg.subtle'} whiteSpace="nowrap">
-                    {item.departmentSymbols.length ? item.departmentSymbols.join(', ') : '—'}
-                  </Text>
+                <Table.Cell>
+                  <StatusBadge status={item.status} extensionDays={item.extensionDays} extensionKind={item.extensionKind} short />
                 </Table.Cell>
                 <Table.Cell textAlign="center">
                   {item.assignee ? (

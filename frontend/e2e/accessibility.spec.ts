@@ -24,6 +24,7 @@ const pages = [
   { path: '/?widok=kalendarz', heading: 'Rejestr wniosków' },
   { path: '/wnioski/nowy', heading: 'Rejestracja wniosku' },
   { path: '/archiwum?q=drzewa', heading: 'Archiwum spraw' },
+  { path: '/anonimizacja', heading: 'Anonimizacja dokumentu' },
   { path: '/baza-wiedzy', heading: 'Baza wiedzy' },
   { path: '/wydzialy', heading: 'Wydziały i biura' },
   { path: '/administracja/uzytkownicy', heading: 'Użytkownicy' },

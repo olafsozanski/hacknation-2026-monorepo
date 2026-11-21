@@ -14,7 +14,7 @@ export function AnalysisProgress({ fileName }: { fileName?: string }) {
             <List.Root color="fg.muted" fontSize="sm" ps="4">
               <List.Item>odczyt treści dokumentu,</List.Item>
               <List.Item>propozycja przedmiotu i danych wnioskodawcy,</List.Item>
-              <List.Item>wyszukiwanie podobnych spraw z ostatnich 12 miesięcy,</List.Item>
+              <List.Item>wyszukiwanie podobnych spraw w rejestrze i archiwum,</List.Item>
               <List.Item>wskazanie wydziałów, które mogą przygotować odpowiedź.</List.Item>
             </List.Root>
           </Stack>

@@ -77,7 +77,7 @@ export const useChangeStatus = (id: string) =>
   )
 
 export const useExtendDeadline = (id: string) =>
-  useCaseMutation(id, (body: { days: number; reason: string; version: number }) =>
+  useCaseMutation(id, (body: { days: number; reason: string; version: number; kind: 'Query' | 'Clarification' }) =>
     api<ExtensionResult>(`/api/requests/${id}/extension`, { method: 'POST', body }),
   )
 

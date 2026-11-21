@@ -11,9 +11,16 @@ import { notifyError, notifySuccess } from '@/components/ui/toaster'
 import { requestDetailQuery, useChangeStatus } from '@/features/case/api'
 import { formatTime, plural } from '@/lib/dates'
 import { draftQuery, exportDraft, useDetectRedactions, useGenerateDraft, useSaveDraft } from './api'
-import { DraftDocument } from './components/DraftDocument'
-import { RedactionPanel } from './components/RedactionPanel'
-import { addManual, addPhrase, approveAllSuggested, countByStatus, placeholderPattern, withStatus } from './redactions'
+import { RedactedDocument } from '@/components/redaction/RedactedDocument'
+import { RedactionPanel } from '@/components/redaction/RedactionPanel'
+import {
+  addManual,
+  addPhrase,
+  approveAllSuggested,
+  countByStatus,
+  placeholderPattern,
+  withStatus,
+} from '@/components/redaction/redactions'
 
 type Mode = 'review' | 'edit' | 'preview'
 type ExportFormat = 'docx' | 'txt'
@@ -294,7 +301,8 @@ function Editor({ requestId, caseNumber, status, requestVersion, draft, breadcru
             </Field.Root>
           </Box>
         ) : (
-          <DraftDocument
+          <RedactedDocument
+            label="Treść projektu odpowiedzi"
             content={content}
             redactions={redactions}
             mode={mode}

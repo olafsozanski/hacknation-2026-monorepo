@@ -60,6 +60,10 @@ export const router = createBrowserRouter([
             lazy: () => import('@/features/drafting/DraftEditorPage').then((m) => ({ Component: m.DraftEditorPage })),
           },
           {
+            path: 'anonimizacja',
+            lazy: () => import('@/features/anonymization/AnonymizationPage').then((m) => ({ Component: m.AnonymizationPage })),
+          },
+          {
             path: 'archiwum',
             lazy: () => import('@/features/archive/ArchivePage').then((m) => ({ Component: m.ArchivePage })),
           },

@@ -1,7 +1,7 @@
 import { Badge } from '@chakra-ui/react'
 import { CheckCircle2, CircleDashed, FileCheck2, Hourglass, Send, type LucideIcon } from 'lucide-react'
-import type { RequestStatus } from '@/api/types'
-import { statusLabels, statusShortLabels } from '@/lib/labels'
+import type { ExtensionKind, RequestStatus } from '@/api/types'
+import { extensionKindLabels, statusLabels, statusShortLabels } from '@/lib/labels'
 
 const appearance: Record<RequestStatus, { palette: string; icon: LucideIcon }> = {
   NoAction: { palette: 'gray', icon: CircleDashed },
@@ -11,12 +11,18 @@ const appearance: Record<RequestStatus, { palette: string; icon: LucideIcon }> =
   ResponseSent: { palette: 'green', icon: CheckCircle2 },
 }
 
-type StatusBadgeProps = { status: RequestStatus; extensionDays?: number | null; short?: boolean }
+type StatusBadgeProps = {
+  status: RequestStatus
+  extensionDays?: number | null
+  extensionKind?: ExtensionKind | null
+  short?: boolean
+}
 
-export function StatusBadge({ status, extensionDays, short }: StatusBadgeProps) {
+export function StatusBadge({ status, extensionDays, extensionKind, short }: StatusBadgeProps) {
   const { palette, icon: Icon } = appearance[status]
-  const label = short ? statusShortLabels[status] : statusLabels[status]
-  const suffix = status === 'Extended' && extensionDays ? ` +${extensionDays} dni` : ''
+  const extended = status === 'Extended'
+  const label = extended && extensionKind ? extensionKindLabels[extensionKind] : short ? statusShortLabels[status] : statusLabels[status]
+  const suffix = extended && extensionDays ? ` +${extensionDays} dni` : ''
   return (
     <Badge colorPalette={palette} variant="subtle" size="md" gap="1.5" px="2" py="0.5" whiteSpace="nowrap">
       <Icon size={14} aria-hidden strokeWidth={2.25} />

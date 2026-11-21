@@ -7,7 +7,7 @@ import { similarQuery } from '../api'
 export function SimilarCasesPanel({ requestId }: { requestId: string }) {
   const similar = useQuery(similarQuery(requestId))
   return (
-    <Panel title="Podobne sprawy" description="Ostatnie 12 miesięcy i archiwum odpowiedzi.">
+    <Panel title="Podobne sprawy" description="Z rejestru i archiwum odpowiedzi.">
       {similar.isPending ? (
         <Text color="fg.muted">Wyszukiwanie…</Text>
       ) : similar.data && similar.data.length > 0 ? (

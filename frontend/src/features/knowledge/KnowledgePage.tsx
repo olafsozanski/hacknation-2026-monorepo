@@ -10,6 +10,7 @@ import {
   Input,
   NativeSelect,
   Portal,
+  Progress,
   Stack,
   Table,
   Text,
@@ -24,84 +25,110 @@ import { PageHeader } from '@/components/common/PageHeader'
 import { EmptyHint, ErrorState, LoadingState } from '@/components/common/States'
 import { notifyError, notifySuccess } from '@/components/ui/toaster'
 import { useSystemInfo } from '@/features/platform/api'
-import { formatDateTime } from '@/lib/dates'
+import { formatDateTime, plural } from '@/lib/dates'
 import { knowledgeKindLabels } from '@/lib/labels'
 
 const knowledgeQueryKey = ['knowledge']
 
+type UploadOutcome = { name: string; error: string | null }
+
 function UploadDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const queryClient = useQueryClient()
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[]>([])
   const [title, setTitle] = useState('')
-  const [kind, setKind] = useState<KnowledgeKind>('Law')
+  const [kind, setKind] = useState<KnowledgeKind>('ArchivedResponse')
   const [error, setError] = useState<string | null>(null)
-  const upload = useMutation({
-    mutationFn: () => {
-      const form = new FormData()
-      form.append('file', file!)
-      form.append('kind', kind)
-      if (title.trim()) form.append('title', title.trim())
-      return api<KnowledgeDocument>('/api/knowledge', { method: 'POST', body: form })
-    },
-    onSuccess: (doc) => {
-      void queryClient.invalidateQueries({ queryKey: knowledgeQueryKey })
-      notifySuccess('Dodano dokument do bazy wiedzy', doc.title)
-      setFile(null)
-      setTitle('')
-      onClose()
-    },
-    onError: (e) => setError(e instanceof ApiError ? (Object.values(e.fieldErrors)[0] ?? e.message) : 'Nie udało się dodać dokumentu.'),
-  })
+  const [progress, setProgress] = useState<{ done: number; outcomes: UploadOutcome[] } | null>(null)
+  const uploading = progress !== null && progress.done < files.length
 
-  const submit = (event: FormEvent) => {
+  const close = () => {
+    if (uploading) return
+    setFiles([])
+    setTitle('')
+    setError(null)
+    setProgress(null)
+    onClose()
+  }
+
+  const submit = async (event: FormEvent) => {
     event.preventDefault()
-    if (!file) {
-      setError('Wybierz plik.')
+    if (files.length === 0) {
+      setError('Wybierz co najmniej jeden plik.')
       return
     }
     setError(null)
-    upload.mutate()
+    const outcomes: UploadOutcome[] = []
+    setProgress({ done: 0, outcomes })
+    for (const file of files) {
+      const form = new FormData()
+      form.append('file', file)
+      form.append('kind', kind)
+      if (files.length === 1 && title.trim()) form.append('title', title.trim())
+      try {
+        await api<KnowledgeDocument>('/api/knowledge', { method: 'POST', body: form })
+        outcomes.push({ name: file.name, error: null })
+      } catch (e) {
+        outcomes.push({ name: file.name, error: e instanceof ApiError ? (Object.values(e.fieldErrors)[0] ?? e.message) : 'Błąd przesyłania.' })
+      }
+      setProgress({ done: outcomes.length, outcomes: [...outcomes] })
+    }
+    void queryClient.invalidateQueries({ queryKey: knowledgeQueryKey })
+    const failed = outcomes.filter((o) => o.error).length
+    if (failed === 0) {
+      notifySuccess(`Dodano ${outcomes.length} ${plural(outcomes.length, 'dokument', 'dokumenty', 'dokumentów')} do bazy wiedzy`)
+      setProgress(null)
+      setFiles([])
+      setTitle('')
+      onClose()
+    }
   }
 
   return (
-    <Dialog.Root open={open} onOpenChange={(e) => !e.open && onClose()}>
+    <Dialog.Root open={open} onOpenChange={(e) => !e.open && close()} scrollBehavior="inside">
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
           <Dialog.Content as="form" onSubmit={submit}>
             <Dialog.Header>
-              <Dialog.Title>Dodaj dokument do bazy wiedzy</Dialog.Title>
+              <Dialog.Title>Dodaj dokumenty do bazy wiedzy</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
               <Stack gap="4">
                 <Field.Root required invalid={!!error}>
-                  <Field.Label>Plik (PDF, DOCX, TXT)</Field.Label>
+                  <Field.Label>Pliki (PDF, DOCX, TXT — można wybrać wiele)</Field.Label>
                   <FileUpload.Root
-                    maxFiles={1}
+                    maxFiles={100}
                     maxFileSize={20 * 1024 * 1024}
                     accept={['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain']}
                     onFileAccept={(d) => {
-                      setFile(d.files[0] ?? null)
+                      setFiles(d.files)
                       setError(null)
+                      setProgress(null)
                     }}
-                    onFileReject={(d) => d.files.length > 0 && setError('Dozwolone są pliki PDF, DOCX lub TXT do 20 MB.')}
+                    onFileReject={(d) => d.files.length > 0 && setError('Część plików pominięto: dozwolone są PDF, DOCX lub TXT do 20 MB.')}
                   >
                     <FileUpload.HiddenInput />
                     <FileUpload.Trigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Upload size={14} aria-hidden /> {file ? 'Zmień plik' : 'Wybierz plik'}
+                      <Button variant="outline" size="sm" disabled={uploading}>
+                        <Upload size={14} aria-hidden /> {files.length ? 'Zmień wybór' : 'Wybierz pliki'}
                       </Button>
                     </FileUpload.Trigger>
                   </FileUpload.Root>
-                  {file && <Text fontSize="sm">{file.name}</Text>}
+                  {files.length > 0 && (
+                    <Text fontSize="sm">
+                      {files.length === 1 ? files[0].name : `Wybrano ${files.length} ${plural(files.length, 'plik', 'pliki', 'plików')}`}
+                    </Text>
+                  )}
                   <Field.ErrorText>{error}</Field.ErrorText>
                 </Field.Root>
+                {files.length <= 1 && (
+                  <Field.Root>
+                    <Field.Label>Tytuł</Field.Label>
+                    <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Domyślnie nazwa pliku" maxLength={500} />
+                  </Field.Root>
+                )}
                 <Field.Root>
-                  <Field.Label>Tytuł</Field.Label>
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Domyślnie nazwa pliku" maxLength={500} />
-                </Field.Root>
-                <Field.Root>
-                  <Field.Label>Rodzaj dokumentu</Field.Label>
+                  <Field.Label>Rodzaj dokumentów</Field.Label>
                   <NativeSelect.Root>
                     <NativeSelect.Field value={kind} onChange={(e) => setKind(e.target.value as KnowledgeKind)}>
                       {Object.entries(knowledgeKindLabels).map(([value, label]) => (
@@ -113,18 +140,37 @@ function UploadDialog({ open, onClose }: { open: boolean; onClose: () => void })
                     <NativeSelect.Indicator />
                   </NativeSelect.Root>
                 </Field.Root>
+                {progress && (
+                  <Stack gap="2" role="status" aria-live="polite">
+                    <Progress.Root value={Math.round((progress.done / files.length) * 100)} size="sm">
+                      <Progress.Track>
+                        <Progress.Range />
+                      </Progress.Track>
+                    </Progress.Root>
+                    <Text fontSize="sm" color="fg.muted">
+                      Przesłano {progress.done} z {files.length}
+                    </Text>
+                    {progress.outcomes
+                      .filter((o) => o.error)
+                      .map((o) => (
+                        <Text key={o.name} fontSize="sm" color="red.fg">
+                          {o.name}: {o.error}
+                        </Text>
+                      ))}
+                  </Stack>
+                )}
               </Stack>
             </Dialog.Body>
             <Dialog.Footer>
-              <Button variant="outline" onClick={onClose}>
-                Anuluj
+              <Button variant="outline" onClick={close} disabled={uploading}>
+                {progress && !uploading ? 'Zamknij' : 'Anuluj'}
               </Button>
-              <Button type="submit" loading={upload.isPending}>
+              <Button type="submit" loading={uploading} loadingText="Przesyłanie…" disabled={files.length === 0}>
                 Dodaj
               </Button>
             </Dialog.Footer>
             <Dialog.CloseTrigger asChild>
-              <CloseButton size="sm" aria-label="Zamknij" />
+              <CloseButton size="sm" aria-label="Zamknij" disabled={uploading} />
             </Dialog.CloseTrigger>
           </Dialog.Content>
         </Dialog.Positioner>
@@ -155,7 +201,7 @@ export function KnowledgePage() {
         description="Ustawy, zarządzenia, wytyczne i archiwalne odpowiedzi, z których asystent korzysta przy wyszukiwaniu podobnych spraw i przygotowywaniu projektów pism."
         actions={
           <Button onClick={() => setUploading(true)}>
-            <Upload size={16} aria-hidden /> Dodaj dokument
+            <Upload size={16} aria-hidden /> Dodaj dokumenty
           </Button>
         }
       />

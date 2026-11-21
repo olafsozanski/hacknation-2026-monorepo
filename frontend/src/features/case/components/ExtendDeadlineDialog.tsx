@@ -1,13 +1,14 @@
-import { Alert, Button, CloseButton, Dialog, Field, Input, Portal, Stack, Text, Textarea } from '@chakra-ui/react'
+import { Alert, Button, CloseButton, Dialog, Field, Input, Portal, RadioCard, Stack, Text, Textarea } from '@chakra-ui/react'
 import { useState, type FormEvent } from 'react'
 import { ApiError } from '@/api/client'
-import type { ExtensionResult, RequestDetail } from '@/api/types'
+import type { ExtensionKind, ExtensionResult, RequestDetail } from '@/api/types'
 import { CopyButton } from '@/components/common/CopyButton'
 import { formatDate } from '@/lib/dates'
 import { useExtendDeadline } from '../api'
 
 export function ExtendDeadlineDialog({ request, open, onClose }: { request: RequestDetail; open: boolean; onClose: () => void }) {
   const extend = useExtendDeadline(request.id)
+  const [kind, setKind] = useState<ExtensionKind>('Query')
   const [days, setDays] = useState('30')
   const [reason, setReason] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -21,11 +22,11 @@ export function ExtendDeadlineDialog({ request, open, onClose }: { request: Requ
       return
     }
     if (!reason.trim()) {
-      setErrors({ reason: 'Podaj przyczynę przedłużenia — zostanie wskazana w zawiadomieniu.' })
+      setErrors({ reason: kind === 'Query' ? 'Podaj przyczynę przedłużenia — zostanie wskazana w zawiadomieniu.' : 'Opisz, czego ma dotyczyć doprecyzowanie.' })
       return
     }
     extend.mutate(
-      { days: value, reason: reason.trim(), version: request.version },
+      { days: value, reason: reason.trim(), version: request.version, kind },
       {
         onSuccess: setResult,
         onError: (error) => setErrors(error instanceof ApiError ? { ...error.fieldErrors, form: error.message } : {}),
@@ -40,7 +41,7 @@ export function ExtendDeadlineDialog({ request, open, onClose }: { request: Requ
         <Dialog.Positioner>
           <Dialog.Content as="form" onSubmit={submit}>
             <Dialog.Header>
-              <Dialog.Title>{result ? 'Termin przedłużony' : 'Przedłużenie terminu (kwerenda)'}</Dialog.Title>
+              <Dialog.Title>{result ? 'Termin przedłużony' : 'Przedłużenie terminu odpowiedzi'}</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
               {result ? (
@@ -50,11 +51,13 @@ export function ExtendDeadlineDialog({ request, open, onClose }: { request: Requ
                     <Alert.Title>Nowy termin odpowiedzi: {formatDate(result.extendedDueOn)}</Alert.Title>
                   </Alert.Root>
                   <Text>
-                    Zgodnie z art. 13 ust. 2 UDIP powiadom wnioskodawcę o przyczynach opóźnienia i nowym terminie. Poniżej
-                    projekt zawiadomienia — skopiuj go i wyślij właściwym kanałem.
+                    {kind === 'Query'
+                      ? 'Zgodnie z art. 13 ust. 2 UDIP powiadom wnioskodawcę o przyczynach opóźnienia i nowym terminie.'
+                      : 'Wezwij wnioskodawcę do doprecyzowania wniosku w terminie 7 dni i wskaż nowy termin rozpatrzenia.'}{' '}
+                    Poniżej projekt pisma — skopiuj go i wyślij właściwym kanałem.
                   </Text>
                   <Field.Root>
-                    <Field.Label>Projekt zawiadomienia</Field.Label>
+                    <Field.Label>{kind === 'Query' ? 'Projekt zawiadomienia' : 'Projekt wezwania do doprecyzowania'}</Field.Label>
                     <Textarea readOnly value={result.noticeText} rows={14} fontSize="sm" lineHeight="1.6" />
                   </Field.Root>
                 </Stack>
@@ -70,6 +73,31 @@ export function ExtendDeadlineDialog({ request, open, onClose }: { request: Requ
                       <Alert.Title>{errors.form}</Alert.Title>
                     </Alert.Root>
                   )}
+                  <RadioCard.Root value={kind} onValueChange={(e) => setKind(e.value as ExtensionKind)} size="sm">
+                    <RadioCard.Label>Rodzaj pisma</RadioCard.Label>
+                    <Stack direction={{ base: 'column', sm: 'row' }} gap="2">
+                      <RadioCard.Item value="Query" flex="1">
+                        <RadioCard.ItemHiddenInput />
+                        <RadioCard.ItemControl>
+                          <RadioCard.ItemContent>
+                            <RadioCard.ItemText>Kwerenda</RadioCard.ItemText>
+                            <RadioCard.ItemDescription>Potrzeba więcej czasu na zebranie informacji</RadioCard.ItemDescription>
+                          </RadioCard.ItemContent>
+                          <RadioCard.ItemIndicator />
+                        </RadioCard.ItemControl>
+                      </RadioCard.Item>
+                      <RadioCard.Item value="Clarification" flex="1">
+                        <RadioCard.ItemHiddenInput />
+                        <RadioCard.ItemControl>
+                          <RadioCard.ItemContent>
+                            <RadioCard.ItemText>Wezwanie do doprecyzowania</RadioCard.ItemText>
+                            <RadioCard.ItemDescription>Zakres wniosku jest niejasny</RadioCard.ItemDescription>
+                          </RadioCard.ItemContent>
+                          <RadioCard.ItemIndicator />
+                        </RadioCard.ItemControl>
+                      </RadioCard.Item>
+                    </Stack>
+                  </RadioCard.Root>
                   <Field.Root required invalid={!!errors.days} maxW="48">
                     <Field.Label>
                       Liczba dni przedłużenia <Field.RequiredIndicator />
@@ -80,12 +108,16 @@ export function ExtendDeadlineDialog({ request, open, onClose }: { request: Requ
                   </Field.Root>
                   <Field.Root required invalid={!!errors.reason}>
                     <Field.Label>
-                      Przyczyna przedłużenia <Field.RequiredIndicator />
+                      {kind === 'Query' ? 'Przyczyna przedłużenia' : 'Czego ma dotyczyć doprecyzowanie'} <Field.RequiredIndicator />
                     </Field.Label>
                     <Textarea
                       rows={4}
                       maxLength={2000}
-                      placeholder="Np. konieczność przeprowadzenia kwerendy w archiwum zakładowym i zebrania danych z kilku wydziałów"
+                      placeholder={
+                        kind === 'Query'
+                          ? 'Np. konieczność przeprowadzenia całościowej kwerendy w zakresie wnioskowanych danych'
+                          : 'Np. wskazanie, o jakie dokładnie akta sprawy budowlanej chodzi'
+                      }
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
                     />
@@ -97,7 +129,7 @@ export function ExtendDeadlineDialog({ request, open, onClose }: { request: Requ
             <Dialog.Footer>
               {result ? (
                 <>
-                  <CopyButton text={result.noticeText} label="Kopiuj zawiadomienie" />
+                  <CopyButton text={result.noticeText} label="Kopiuj pismo" />
                   <Button onClick={onClose}>Zamknij</Button>
                 </>
               ) : (

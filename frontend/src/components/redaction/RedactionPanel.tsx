@@ -3,14 +3,14 @@ import { Check, CheckCheck, Crosshair, RotateCcw, ScanSearch, X } from 'lucide-r
 import { useState, type FormEvent } from 'react'
 import type { Redaction } from '@/api/types'
 import { redactionCategoryLabels, redactionSourceLabels } from '@/lib/labels'
-import { countByStatus } from '../redactions'
+import { countByStatus } from './redactions'
 
 type RedactionPanelProps = {
   redactions: Redaction[]
   detecting: boolean
   onSetStatus: (index: number, status: Redaction['status']) => void
   onApproveAll: () => void
-  onDetect: () => void
+  onDetect?: () => void
   onAddPhrase: (phrase: string) => number
 }
 
@@ -106,7 +106,7 @@ export function RedactionPanel({ redactions, detecting, onSetStatus, onApproveAl
           Anonimizacja
         </Heading>
         <Text fontSize="sm" color="fg.muted">
-          Asystent zaznaczył dane, które mogą wymagać ukrycia. Zdecyduj o każdym fragmencie.
+          Asystent zaznaczył dane, które mogą wymagać ukrycia. Zdecyduj o każdym fragmencie. Szare — do weryfikacji, czarne — zostaną ukryte.
         </Text>
       </Box>
       <Stack gap="1.5" fontSize="sm">
@@ -134,9 +134,11 @@ export function RedactionPanel({ redactions, detecting, onSetStatus, onApproveAl
         <Button size="sm" onClick={onApproveAll} disabled={counts.suggested === 0}>
           <CheckCheck size={14} aria-hidden /> Ukryj wszystkie sugestie
         </Button>
-        <Button size="sm" variant="outline" onClick={onDetect} loading={detecting} loadingText="Wykrywanie…">
-          <ScanSearch size={14} aria-hidden /> Wykryj ponownie
-        </Button>
+        {onDetect && (
+          <Button size="sm" variant="outline" onClick={onDetect} loading={detecting} loadingText="Wykrywanie…">
+            <ScanSearch size={14} aria-hidden /> Wykryj ponownie
+          </Button>
+        )}
       </Flex>
       <chakra.form onSubmit={addPhrase}>
         <Field.Root>

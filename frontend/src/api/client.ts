@@ -97,8 +97,8 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   return (type.includes('json') ? await response.json() : undefined) as T
 }
 
-export async function downloadFile(path: string, fallbackName: string) {
-  const response = await send(path, {})
+export async function downloadFile(path: string, fallbackName: string, body?: unknown) {
+  const response = await send(path, body === undefined ? {} : { method: 'POST', body })
   const blob = await response.blob()
   const name = fileNameFrom(response.headers.get('Content-Disposition')) ?? fallbackName
   const url = URL.createObjectURL(blob)

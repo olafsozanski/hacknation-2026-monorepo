@@ -4,7 +4,7 @@ import { useState } from 'react'
 import type { RequestDetail } from '@/api/types'
 import { Panel } from '@/components/common/Panel'
 import { formatDate } from '@/lib/dates'
-import { replyChannelLabels } from '@/lib/labels'
+import { extensionKindLabels, replyChannelLabels } from '@/lib/labels'
 import { EditRequestDialog } from './EditRequestDialog'
 
 export function CaseDetailsPanel({ request }: { request: RequestDetail }) {
@@ -15,7 +15,12 @@ export function CaseDetailsPanel({ request }: { request: RequestDetail }) {
     ['Data wpływu', formatDate(request.receivedOn)],
     ['Termin ustawowy', formatDate(request.dueOn)],
     ...(request.extendedDueOn
-      ? ([['Termin po przedłużeniu', `${formatDate(request.extendedDueOn)} (+${request.extensionDays} dni)`]] as [string, string][])
+      ? ([
+          [
+            request.extensionKind ? `Termin po przedłużeniu (${extensionKindLabels[request.extensionKind].toLowerCase()})` : 'Termin po przedłużeniu',
+            `${formatDate(request.extendedDueOn)} (+${request.extensionDays} dni)`,
+          ],
+        ] as [string, string][])
       : []),
     ['Najpóźniej po przedłużeniu', formatDate(request.latestExtendedDueOn)],
     ['Prowadzi', request.assignee ? `${request.assignee.fullName} (${request.assignee.initials})` : '—'],

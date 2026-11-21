@@ -37,7 +37,7 @@ export function CaseActions({ request }: { request: RequestDetail }) {
                 <Pencil size={16} aria-hidden /> Edytuj dane sprawy
               </Menu.Item>
               <Menu.Item value="extend" onSelect={() => setDialog('extend')} disabled={request.status === 'ResponseSent'}>
-                <Hourglass size={16} aria-hidden /> Przedłuż termin (kwerenda)
+                <Hourglass size={16} aria-hidden /> Przedłuż termin / doprecyzowanie
               </Menu.Item>
               <Menu.Separator />
               <Menu.ItemGroup>

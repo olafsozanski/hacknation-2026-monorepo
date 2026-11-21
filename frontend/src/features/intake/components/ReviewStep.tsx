@@ -274,7 +274,7 @@ export function ReviewStep({ intake, onRestart }: ReviewStepProps) {
             </Stack>
           </Panel>
 
-          <Panel title="Podobne wnioski" description="Sprawy z ostatnich 12 miesięcy i archiwum odpowiedzi.">
+          <Panel title="Podobne wnioski" description="Najbardziej zbliżone sprawy z rejestru i archiwum odpowiedzi.">
             {intake && intake.similarCases.length > 0 ? (
               <SimilarCasesList hits={intake.similarCases} newTab />
             ) : (

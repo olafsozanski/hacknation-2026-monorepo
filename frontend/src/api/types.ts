@@ -6,6 +6,7 @@ export type ReplyChannel = 'Email' | 'Post' | 'Epuap' | 'InPerson' | 'Other'
 export type DepartmentKind = 'Department' | 'Office'
 export type DocumentKind = 'Request' | 'DepartmentReply' | 'Attachment'
 export type KnowledgeKind = 'Law' | 'Ordinance' | 'ArchivedResponse' | 'Guideline' | 'Other'
+export type ExtensionKind = 'Query' | 'Clarification'
 export type RedactionCategory =
   | 'PersonName'
   | 'Address'
@@ -16,6 +17,14 @@ export type RedactionCategory =
   | 'BankAccount'
   | 'Nip'
   | 'DateOfBirth'
+  | 'FamilySituation'
+  | 'Health'
+  | 'Financial'
+  | 'SpecialCategory'
+  | 'CriminalRecord'
+  | 'PropertyRecord'
+  | 'VehicleRegistration'
+  | 'ProtectedSecret'
   | 'Other'
 export type RedactionStatus = 'Suggested' | 'Approved' | 'Rejected'
 export type RedactionSource = 'Rule' | 'Ai' | 'Manual'
@@ -43,6 +52,7 @@ export type RequestListItem = {
   dueOn: IsoDate
   effectiveDueOn: IsoDate
   extensionDays: number | null
+  extensionKind: ExtensionKind | null
   respondedOn: IsoDate | null
   status: RequestStatus
   urgency: Urgency
@@ -106,6 +116,7 @@ export type RequestDetail = {
   effectiveDueOn: IsoDate
   extendedDueOn: IsoDate | null
   extensionDays: number | null
+  extensionKind: ExtensionKind | null
   extensionReason: string | null
   latestExtendedDueOn: IsoDate
   respondedOn: IsoDate | null
@@ -225,6 +236,14 @@ export type Draft = {
   updatedAt: string
   updatedBy: string
   version: number
+}
+
+export type AnonymizationResult = {
+  fileName: string | null
+  text: string
+  redactions: Redaction[]
+  warnings: string[]
+  aiUsed: boolean
 }
 
 export type GenerateDraftResult = { draft: Draft; warnings: string[]; aiUsed: boolean }

@@ -1,5 +1,5 @@
 import { Box, Button, Stack, Text } from '@chakra-ui/react'
-import { Archive, BookOpen, Building2, FilePlus2, Inbox, Users, type LucideIcon } from 'lucide-react'
+import { Archive, BookOpen, Building2, FilePlus2, Inbox, ShieldCheck, Users, type LucideIcon } from 'lucide-react'
 import { Link as RouterLink, NavLink } from 'react-router'
 import { useCurrentUser } from '@/features/auth/session'
 
@@ -8,6 +8,7 @@ type Item = { to: string; label: string; icon: LucideIcon; end?: boolean }
 const mainItems: Item[] = [
   { to: '/', label: 'Rejestr wniosków', icon: Inbox, end: true },
   { to: '/archiwum', label: 'Archiwum spraw', icon: Archive },
+  { to: '/anonimizacja', label: 'Anonimizacja', icon: ShieldCheck },
   { to: '/baza-wiedzy', label: 'Baza wiedzy', icon: BookOpen },
   { to: '/wydzialy', label: 'Wydziały i biura', icon: Building2 },
 ]

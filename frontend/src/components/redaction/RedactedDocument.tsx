@@ -3,14 +3,15 @@ import { EyeOff } from 'lucide-react'
 import { useRef, useState, type MouseEvent } from 'react'
 import type { Redaction } from '@/api/types'
 import { redactionCategoryLabels } from '@/lib/labels'
-import { buildSegments, offsetWithin, splitPlaceholders } from '../redactions'
+import { buildSegments, offsetWithin, splitPlaceholders } from './redactions'
 
 export type DocumentMode = 'review' | 'preview'
 
-type DraftDocumentProps = {
+type RedactedDocumentProps = {
   content: string
   redactions: Redaction[]
   mode: DocumentMode
+  label: string
   onToggle: (index: number) => void
   onSelectRange: (start: number, end: number) => void
 }
@@ -35,7 +36,7 @@ function TextPieces({ text, start }: { text: string; start: number }) {
   )
 }
 
-export function DraftDocument({ content, redactions, mode, onToggle, onSelectRange }: DraftDocumentProps) {
+export function RedactedDocument({ content, redactions, mode, label, onToggle, onSelectRange }: RedactedDocumentProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [selection, setSelection] = useState<{ start: number; end: number; top: number; left: number } | null>(null)
 
@@ -65,7 +66,7 @@ export function DraftDocument({ content, redactions, mode, onToggle, onSelectRan
     <Box position="relative" ref={containerRef} onMouseUp={captureSelection}>
       <Box
         as="article"
-        aria-label="Treść projektu odpowiedzi"
+        aria-label={label}
         bg="bg.panel"
         borderWidth="1px"
         borderColor="border"

@@ -33,7 +33,7 @@ export function CasePage() {
         breadcrumbs={[{ label: 'Rejestr wniosków', to: '/' }, { label: request.caseNumber }]}
         badges={
           <>
-            <StatusBadge status={request.status} extensionDays={request.extensionDays} />
+            <StatusBadge status={request.status} extensionDays={request.extensionDays} extensionKind={request.extensionKind} />
             <DeadlineBadge urgency={request.urgency} daysLeft={request.daysLeft} />
             {request.assignee && (
               <Badge variant="outline" size="md" gap="1.5" ps="0.5">

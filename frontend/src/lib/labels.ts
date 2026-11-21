@@ -1,5 +1,6 @@
 import type {
   DocumentKind,
+  ExtensionKind,
   KnowledgeKind,
   RedactionCategory,
   RedactionSource,
@@ -13,7 +14,7 @@ import { days } from './dates'
 export const statusLabels: Record<RequestStatus, string> = {
   NoAction: 'Brak działań',
   QueriesSent: 'Zapytania wysłane do wydziałów',
-  Extended: 'Kwerenda — termin przedłużony',
+  Extended: 'Termin przedłużony',
   ResponsePrepared: 'Odpowiedź przygotowana',
   ResponseSent: 'Odpowiedź wysłana',
 }
@@ -21,12 +22,17 @@ export const statusLabels: Record<RequestStatus, string> = {
 export const statusShortLabels: Record<RequestStatus, string> = {
   NoAction: 'Brak działań',
   QueriesSent: 'W wydziałach',
-  Extended: 'Kwerenda',
+  Extended: 'Przedłużony',
   ResponsePrepared: 'Odpowiedź gotowa',
   ResponseSent: 'Wysłano',
 }
 
 export const statusOrder: RequestStatus[] = ['NoAction', 'QueriesSent', 'Extended', 'ResponsePrepared', 'ResponseSent']
+
+export const extensionKindLabels: Record<ExtensionKind, string> = {
+  Query: 'Kwerenda',
+  Clarification: 'Doprecyzowanie wniosku',
+}
 
 export const replyChannelLabels: Record<ReplyChannel, string> = {
   Email: 'E-mail',
@@ -59,7 +65,15 @@ export const redactionCategoryLabels: Record<RedactionCategory, string> = {
   Email: 'E-mail',
   BankAccount: 'Rachunek bankowy',
   Nip: 'NIP',
-  DateOfBirth: 'Data urodzenia',
+  DateOfBirth: 'Data i miejsce urodzenia',
+  FamilySituation: 'Sytuacja rodzinna',
+  Health: 'Stan zdrowia',
+  Financial: 'Sytuacja majątkowa',
+  SpecialCategory: 'Dane wrażliwe',
+  CriminalRecord: 'Karalność',
+  PropertyRecord: 'Księga wieczysta / działka',
+  VehicleRegistration: 'Nr rejestracyjny pojazdu',
+  ProtectedSecret: 'Tajemnica prawnie chroniona',
   Other: 'Inne dane',
 }
 
@@ -87,6 +101,7 @@ export const auditActionLabels: Record<string, string> = {
   'draft.generated': 'Wygenerowano projekt odpowiedzi',
   'draft.saved': 'Zapisano projekt odpowiedzi',
   'draft.exported': 'Pobrano odpowiedź',
+  'department.updated': 'Zmieniono dane wydziału',
 }
 
 export function deadlineLabel(urgency: Urgency, daysLeft: number) {

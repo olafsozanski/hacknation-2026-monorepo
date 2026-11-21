@@ -80,8 +80,8 @@ export function SourceStep({ busy, error, onFile, onText, onManual }: SourceStep
             </FileUpload.Dropzone>
           </FileUpload.Root>
           <Text fontSize="sm" color="fg.muted">
-            Asystent odczyta treść, zaproponuje przedmiot i dane wnioskodawcy, wyliczy termin oraz wyszuka podobne sprawy z
-            ostatniego roku.
+            Asystent odczyta treść, zaproponuje przedmiot i dane wnioskodawcy, wyliczy termin oraz wyszuka podobne sprawy w
+            rejestrze i archiwum.
           </Text>
         </Card.Body>
       </Card.Root>
