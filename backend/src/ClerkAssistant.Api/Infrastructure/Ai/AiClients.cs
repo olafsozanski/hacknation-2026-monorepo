@@ -28,6 +28,16 @@ public sealed class AiClients
             .AsIEmbeddingGenerator(AppDbContext.EmbeddingDimensions);
     }
 
+    internal AiClients(
+        AiOptions options,
+        IChatClient? chat,
+        IEmbeddingGenerator<string, Embedding<float>>? embeddings)
+    {
+        Options = options;
+        Chat = chat;
+        Embeddings = embeddings;
+    }
+
     public AiOptions Options { get; }
     public IChatClient? Chat { get; }
     public IEmbeddingGenerator<string, Embedding<float>>? Embeddings { get; }
