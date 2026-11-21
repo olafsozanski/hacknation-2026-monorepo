@@ -27,12 +27,14 @@ function NavItem({ item, onNavigate }: { item: Item; onNavigate?: () => void }) 
             gap="3"
             px="4"
             py="2.5"
-            borderRadius="sm"
+            borderRadius="0 var(--chakra-radii-sm) var(--chakra-radii-sm) 0"
+            borderLeftWidth="4px"
+            borderLeftColor={isActive ? 'brand.solid' : 'transparent'}
             fontWeight={isActive ? 'bold' : 'medium'}
-            bg={isActive ? 'brand.solid' : 'transparent'}
-            color={isActive ? 'brand.contrast' : 'fg'}
-            _hover={{ bg: isActive ? 'brand.solid' : 'bg.muted' }}
-            transition="background 0.15s"
+            bg={isActive ? 'brand.subtle' : 'transparent'}
+            color={isActive ? 'brand.fg' : 'fg'}
+            _hover={{ bg: isActive ? 'brand.subtle' : 'bg.muted', color: 'brand.fg' }}
+            transition="background 0.15s, color 0.15s"
           >
             <Icon size={18} aria-hidden />
             {item.label}
