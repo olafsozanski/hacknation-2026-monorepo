@@ -1,5 +1,5 @@
 import { createSystem, defaultConfig, defineConfig } from '@chakra-ui/react'
-import { checkboxAnatomy, nativeSelectAnatomy, segmentGroupAnatomy } from '@chakra-ui/react/anatomy'
+import { checkboxAnatomy, datePickerAnatomy, nativeSelectAnatomy, segmentGroupAnatomy } from '@chakra-ui/react/anatomy'
 
 const hc = (base: string, highContrast: string) => ({ value: { base, _light: base, _highContrast: highContrast } })
 
@@ -151,6 +151,10 @@ const config = defineConfig({
       nativeSelect: {
         slots: nativeSelectAnatomy.keys(),
         variants: { variant: { outline: { field: { borderColor: 'border.emphasized' } } } },
+      },
+      datePicker: {
+        slots: datePickerAnatomy.keys(),
+        variants: { variant: { outline: { input: { borderColor: 'border.emphasized' } } } },
       },
       segmentGroup: {
         slots: segmentGroupAnatomy.keys(),
