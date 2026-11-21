@@ -21,7 +21,9 @@ services:
       db:
         condition: service_healthy
     environment:
-      ConnectionStrings__Database: Host=db;Database=udip;Username=udip;Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__Database: Host=db;Database=udip;Username=udip;Password=${POSTGRES_PASSWORD};GSS Encryption Mode=Disable
+      Security__RequireHttps: ${REQUIRE_HTTPS:-false}
+      Security__TrustForwardedHeaders: ${TRUST_FORWARDED_HEADERS:-false}
       Seed__AdminPassword: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
       Seed__DemoData: ${DEMO_DATA:-false}
       Seed__DemoPassword: ${DEMO_PASSWORD:-}

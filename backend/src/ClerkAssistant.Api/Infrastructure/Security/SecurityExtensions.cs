@@ -3,6 +3,7 @@ using ClerkAssistant.Api.Domain;
 using ClerkAssistant.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 
@@ -18,9 +19,20 @@ public static class SecurityExtensions
     public static WebApplicationBuilder AddSecurity(this WebApplicationBuilder builder)
     {
         var services = builder.Services;
-        var cookieSecurity = builder.Environment.IsDevelopment()
-            ? CookieSecurePolicy.SameAsRequest
-            : CookieSecurePolicy.Always;
+        var options = builder.Configuration.GetSection(SecurityOptions.Section).Get<SecurityOptions>() ?? new SecurityOptions();
+        var requireHttps = options.RequireHttps ?? !builder.Environment.IsDevelopment();
+        var cookieSecurity = requireHttps ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
+        services.AddSingleton(new SecuritySettings(requireHttps, options.TrustForwardedHeaders));
+
+        if (options.TrustForwardedHeaders)
+        {
+            services.Configure<ForwardedHeadersOptions>(o =>
+            {
+                o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+                o.KnownIPNetworks.Clear();
+                o.KnownProxies.Clear();
+            });
+        }
 
         builder.WebHost.ConfigureKestrel(o =>
         {
@@ -100,7 +112,13 @@ public static class SecurityExtensions
 
     public static WebApplication UseSecurityHeaders(this WebApplication app)
     {
-        if (!app.Environment.IsDevelopment())
+        var settings = app.Services.GetRequiredService<SecuritySettings>();
+        if (settings.TrustForwardedHeaders)
+        {
+            app.UseForwardedHeaders();
+        }
+
+        if (settings.RequireHttps)
         {
             app.UseHsts();
         }

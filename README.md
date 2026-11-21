@@ -83,4 +83,6 @@ cd frontend && npm run lint && npm run typecheck && npm test
   injection, brak renderowania HTML).
 - W trybie prototypu z OpenAI treści opuszczają sieć urzędu — interfejs wyraźnie to sygnalizuje.
   Docelowo należy używać wyłącznie modelu lokalnego.
-- Udostępnianie poza `localhost` wyłącznie przez HTTPS (reverse proxy lub certyfikat Kestrel).
+- Udostępnianie poza `localhost` wyłącznie przez HTTPS: reverse proxy (IIS, nginx) oraz `REQUIRE_HTTPS=true`
+  i `TRUST_FORWARDED_HEADERS=true` w `.env` (ciasteczka `Secure`, HSTS). Domyślnie aplikacja nasłuchuje tylko na
+  `127.0.0.1`.
