@@ -1,6 +1,6 @@
 import { Alert, Box, Button, Field, Flex, Grid, Menu, Portal, SegmentGroup, Text, Textarea } from '@chakra-ui/react'
 import { useQuery } from '@tanstack/react-query'
-import { CheckCircle2, ChevronDown, Download, Eye, PenLine, Save, ShieldCheck, Sparkles } from 'lucide-react'
+import { CheckCircle2, ChevronDown, Download, Eye, PenLine, RefreshCw, Save, ShieldCheck, Sparkles } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useBlocker, useNavigate, useParams } from 'react-router'
 import type { Draft, Redaction } from '@/api/types'
@@ -30,6 +30,7 @@ export function DraftEditorPage() {
   const request = useQuery(requestDetailQuery(id))
   const draft = useQuery(draftQuery(id))
   const generate = useGenerateDraft(id)
+  const [generation, setGeneration] = useState(0)
 
   if (request.isPending || draft.isPending) return <LoadingState label="Wczytywanie projektu odpowiedzi…" />
   if (request.isError) return <ErrorState error={request.error} onRetry={() => request.refetch()} />
@@ -60,7 +61,8 @@ export function DraftEditorPage() {
 
   return (
     <Editor
-      key={id}
+      key={`${id}-${generation}`}
+      onRegenerated={() => setGeneration((g) => g + 1)}
       requestId={id}
       caseNumber={request.data.caseNumber}
       status={request.data.status}
@@ -72,6 +74,7 @@ export function DraftEditorPage() {
 }
 
 type EditorProps = {
+  onRegenerated: () => void
   requestId: string
   caseNumber: string
   status: string
@@ -80,9 +83,11 @@ type EditorProps = {
   breadcrumbs: { label: string; to?: string }[]
 }
 
-function Editor({ requestId, caseNumber, status, requestVersion, draft, breadcrumbs }: EditorProps) {
+function Editor({ onRegenerated, requestId, caseNumber, status, requestVersion, draft, breadcrumbs }: EditorProps) {
   const navigate = useNavigate()
   const save = useSaveDraft(requestId)
+  const regenerate = useGenerateDraft(requestId)
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false)
   const detect = useDetectRedactions(requestId)
   const changeStatus = useChangeStatus(requestId)
   const [content, setContent] = useState(draft.content)
@@ -208,7 +213,7 @@ function Editor({ requestId, caseNumber, status, requestVersion, draft, breadcru
             <Menu.Root positioning={{ placement: 'bottom-end' }}>
               <Menu.Trigger asChild>
                 <Button variant="outline">
-                  <Download size={16} aria-hidden /> Pobierz <ChevronDown size={14} aria-hidden />
+                  <Download size={16} aria-hidden /> Pobierz i więcej <ChevronDown size={14} aria-hidden />
                 </Button>
               </Menu.Trigger>
               <Portal>
@@ -219,6 +224,10 @@ function Editor({ requestId, caseNumber, status, requestVersion, draft, breadcru
                     </Menu.Item>
                     <Menu.Item value="txt" onSelect={() => requestExport('txt')}>
                       Tekst (.txt)
+                    </Menu.Item>
+                    <Menu.Separator />
+                    <Menu.Item value="regenerate" onSelect={() => setConfirmRegenerate(true)}>
+                      <RefreshCw size={16} aria-hidden /> Przygotuj projekt ponownie
                     </Menu.Item>
                   </Menu.Content>
                 </Menu.Positioner>
@@ -349,6 +358,32 @@ function Editor({ requestId, caseNumber, status, requestVersion, draft, breadcru
           {placeholders > 0 && `Pismo zawiera ${placeholders} ${plural(placeholders, 'miejsce', 'miejsca', 'miejsc')} do uzupełnienia. `}
           {nothingMarked && 'W piśmie nie wskazano żadnych danych do anonimizacji — upewnij się, że nie zawiera danych osobowych ani informacji chronionych.'}
         </Text>
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={confirmRegenerate}
+        title="Przygotować projekt ponownie?"
+        confirmLabel="Zastąp obecny projekt"
+        destructive
+        loading={regenerate.isPending}
+        onCancel={() => setConfirmRegenerate(false)}
+        onConfirm={() =>
+          regenerate.mutate(version, {
+            onSuccess: (result) => {
+              setConfirmRegenerate(false)
+              setDirty(false)
+              for (const warning of result.warnings) notifyError(new Error(warning), 'Uwaga')
+              onRegenerated()
+            },
+            onError: (e) => {
+              setConfirmRegenerate(false)
+              notifyError(e, 'Nie udało się przygotować projektu')
+            },
+          })
+        }
+      >
+        Nowy projekt powstanie na podstawie aktualnych odpowiedzi wydziałów i zastąpi obecną treść oraz decyzje dotyczące
+        anonimizacji. Niezapisane zmiany zostaną utracone.
       </ConfirmDialog>
 
       <ConfirmDialog

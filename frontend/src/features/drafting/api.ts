@@ -1,5 +1,5 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ApiError, api, downloadFile } from '@/api/client'
+import { ApiError, api, downloadFile, query } from '@/api/client'
 import type { DetectRedactionsResult, Draft, GenerateDraftResult, Redaction } from '@/api/types'
 
 export const draftKey = (requestId: string) => ['request', requestId, 'draft'] as const
@@ -20,7 +20,8 @@ export const draftQuery = (requestId: string) =>
 export function useGenerateDraft(requestId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => api<GenerateDraftResult>(`/api/requests/${requestId}/draft/generate`, { method: 'POST' }),
+    mutationFn: (version?: number) =>
+      api<GenerateDraftResult>(`/api/requests/${requestId}/draft/generate${query({ version })}`, { method: 'POST' }),
     onSuccess: (result) => {
       queryClient.setQueryData(draftKey(requestId), result.draft)
       void queryClient.invalidateQueries({ queryKey: ['request', requestId], exact: true })

@@ -42,7 +42,7 @@ test('clerk registers a request, adds a department reply, prepares and exports a
   await expect(page.getByText(/Zapisano o/)).toBeVisible()
 
   const download = page.waitForEvent('download')
-  await page.getByRole('button', { name: /Pobierz/ }).click()
+  await page.getByRole('button', { name: /Pobierz i więcej/ }).click()
   await page.getByRole('menuitem', { name: /Tekst/ }).click()
   const confirm = page.getByRole('button', { name: 'Pobierz mimo to' })
   await confirm.click({ timeout: 3_000 }).catch(() => undefined)
