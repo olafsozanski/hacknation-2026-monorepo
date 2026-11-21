@@ -27,6 +27,22 @@ public sealed class DepartmentRouter(
     private const int MaxRequestInPrompt = 6000;
     private const int MaxScopeFragment = 160;
 
+    public async Task<DepartmentSuggestion[]> SuggestForRequestAsync(Guid requestId, CancellationToken ct)
+    {
+        var request = await db.Requests
+            .Where(r => r.Id == requestId)
+            .Select(r => new { r.Subject, r.Content, Embedding = r.Embedding == null ? null : r.Embedding.Vector })
+            .FirstOrDefaultAsync(ct)
+            ?? throw new NotFoundException(SearchService.RequestNotFound);
+
+        var outcome = await SuggestAsync(
+            EmbeddingIndexer.RequestText(request.Subject, request.Content),
+            requestId,
+            request.Embedding is null ? null : new QueryEmbedding(request.Embedding, false),
+            ct);
+        return outcome.Suggestions;
+    }
+
     public async Task<RoutingOutcome> SuggestAsync(
         string text, Guid? excludeRequestId, QueryEmbedding? embedding, CancellationToken ct)
     {
@@ -155,15 +171,8 @@ public sealed class DepartmentRouter(
     }
 
     private static DepartmentSuggestion Suggestion(
-        Evidence e, string reason, double confidence, SuggestionSource source) => new(
-        e.Department.Id,
-        e.Department.Symbol,
-        e.Department.Name,
-        reason,
-        Math.Round(confidence, 2),
-        e.SimilarCases,
-        e.AverageResponseDays,
-        source);
+        Evidence e, string reason, double confidence, SuggestionSource source) =>
+        e.Department.ToSuggestion(reason, Math.Round(confidence, 2), e.SimilarCases, e.AverageResponseDays, source);
 
     private static string FallbackReason(Evidence e)
     {

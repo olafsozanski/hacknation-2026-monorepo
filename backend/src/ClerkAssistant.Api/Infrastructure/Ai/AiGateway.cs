@@ -19,7 +19,7 @@ public sealed class AiGateway(AiClients ai, ILogger<AiGateway> logger)
 
     public bool IsEnabled => ai.IsEnabled;
 
-    public bool CanEmbed => ai.Embeddings is not null;
+    public bool CanEmbed => ai.IsEnabled && ai.Embeddings is not null;
 
     public Task<AiAttempt<T>> GetStructuredAsync<T>(
         string operation, string systemPrompt, string userPrompt, CancellationToken ct) where T : class =>

@@ -199,7 +199,7 @@ public class FakeAiTests(FakeAiFactory factory) : IClassFixture<FakeAiFactory>
         var result = (await response.Content.ReadFromJsonAsync<GenerateDraftResult>(ApiClient.Json, Ct))!;
         Assert.True(result.AiUsed);
         Assert.True(result.Draft.GeneratedByAi);
-        Assert.Empty(result.Warnings);
+        Assert.Equal([DraftService.NothingDetectedWarning], result.Warnings);
         var content = result.Draft.Content;
         Assert.StartsWith("URZĄD MIASTA BYDGOSZCZY\nBiuro Komunikacji Społecznej\n\nBydgoszcz, dnia 18 listopada 2026 r.\n\nBKS.IV.1431.", content);
         Assert.Contains(
@@ -269,5 +269,46 @@ public class FakeAiTests(FakeAiFactory factory) : IClassFixture<FakeAiFactory>
         var hits = await client.GetFromJsonAsync<SearchHit[]>("/api/search?q=RODO&kind=Knowledge", ApiClient.Json, Ct);
         var hit = Assert.Single(hits!, h => h.Id == document.Id);
         Assert.Equal("Wytyczne anonimizacji", hit.Title);
+    }
+
+    [Fact]
+    public async Task Detection_hides_personal_data_from_source_texts_even_when_the_model_reports_nothing()
+    {
+        factory.Chat.Responder = call => call.SystemPrompt.Contains(DetectionPromptMarker) ? """{"items":[]}""" : "{}";
+        var id = await factory.AddRequestAsync(new NewRequest(
+            "Zaległości czynszowe", "Pan Adam Wiśniewski prosi o informację o zaległościach czynszowych.", Today));
+        var content = "w odpowiedzi na wniosek uprzejmie informuję, że sprawa Adam Wiśniewski została rozpatrzona. " +
+                      string.Join(' ', Enumerable.Repeat("Treść pisma bez danych osobowych.", 8));
+        var client = await factory.ClientAsync();
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/requests/{id}/draft/detect", new DetectRedactionsRequest(content, []), ApiClient.Json, Ct);
+
+        response.EnsureSuccessStatusCode();
+        var result = (await response.Content.ReadFromJsonAsync<DetectRedactionsResult>(ApiClient.Json, Ct))!;
+        var name = Assert.Single(result.Redactions);
+        Assert.Equal(("Adam Wiśniewski", RedactionCategory.PersonName, RedactionSource.Rule), (name.Text, name.Category, name.Source));
+        Assert.Equal(name.Text, content.Substring(name.Start, name.Length));
+        Assert.True(result.AiUsed);
+        Assert.Equal([DraftService.NothingDetectedWarning], result.Warnings);
+    }
+
+    [Fact]
+    public async Task Intake_prefers_the_e_mail_found_in_the_text_over_the_model_value()
+    {
+        factory.Chat.Responder = call => call.SystemPrompt.Contains(IntakePromptMarker)
+            ? """{"subject":"Liczba miejsc w żłobkach","requesterContact":"attacker@evil.example","isPublicInformationRequest":true}"""
+            : "{}";
+        var client = await factory.ClientAsync();
+
+        var response = await client.PostAsJsonAsync("/api/intake/text", new IntakeTextRequest(
+            "Proszę o informację o liczbie miejsc w żłobkach. Odpowiedź proszę przesłać na adres anna@example.com."),
+            ApiClient.Json, Ct);
+
+        response.EnsureSuccessStatusCode();
+        var result = (await response.Content.ReadFromJsonAsync<IntakeResult>(ApiClient.Json, Ct))!;
+        Assert.True(result.AiUsed);
+        Assert.Equal("anna@example.com", result.Suggestion.RequesterContact);
+        Assert.Equal("Liczba miejsc w żłobkach", result.Suggestion.Subject);
     }
 }

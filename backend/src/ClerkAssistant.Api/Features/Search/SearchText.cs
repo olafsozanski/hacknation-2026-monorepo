@@ -25,7 +25,11 @@ public static class SearchText
         "zakresie", "zakresu", "sprawie", "spraw", "sprawy", "związanych", "związku", "prowadzenie", "należy",
         "zadań", "podstawowych", "wydziału", "wydział", "biura", "biuro", "urzędu", "urząd", "urzędzie",
         "miasta", "miasto", "mieście", "bydgoszcz", "bydgoszczy", "następujących", "następujące", "przesłanie",
-        "przekazanie", "odpowiedź", "odpowiedzi", "podstawie",
+        "przekazanie", "odpowiedź", "odpowiedzi", "podstawie", "witam", "trybie", "stan", "stanu", "koniec", "końca",
+        "według", "aktualne", "aktualny", "aktualnie", "obecnie", "podanie", "chcę", "pragnę", "zapytać", "zapytanie",
+        "uprzejmą", "zwraca", "prosimy", "dziękuję", "styczeń", "luty", "marzec", "kwiecień", "maj", "czerwiec", "lipiec",
+        "sierpień", "wrzesień", "październik", "listopad", "grudzień", "stycznia", "lutego", "marca", "kwietnia", "maja",
+        "czerwca", "lipca", "sierpnia", "października", "listopada", "grudnia",
     };
 
     public static bool IsShortQuery(string text) =>
@@ -55,6 +59,36 @@ public static class SearchText
             .ToList();
     }
 
+    public static IReadOnlyList<(string Token, int Count)> QueryTokens(string text, int minLength, bool includeNumbers)
+    {
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        var order = new List<string>();
+        foreach (var word in Words(text))
+        {
+            if (word.Length < minLength || Stopwords.Contains(word) || (!includeNumbers && word.All(char.IsDigit)))
+            {
+                continue;
+            }
+
+            if (counts.TryGetValue(word, out var count))
+            {
+                counts[word] = count + 1;
+            }
+            else
+            {
+                counts[word] = 1;
+                order.Add(word);
+            }
+        }
+
+        return order.Select(w => (w, counts[w])).ToList();
+    }
+
+    public static bool IsStemmable(string token) =>
+        token.Length >= PrefixMatchMinLength && token.All(char.IsLetter);
+
+    public static bool IsSafeToken(string token) => token.Length > 0 && token.All(char.IsLetterOrDigit);
+
     public static string? BuildOrQuery(IEnumerable<string> tokens)
     {
         var terms = tokens
@@ -76,8 +110,6 @@ public static class SearchText
         return token[..Math.Max(5, token.Length - trimmed)];
     }
 
-    private static bool IsStemmable(string token) =>
-        token.Length >= PrefixMatchMinLength && token.All(char.IsLetter);
 
     public static IReadOnlyList<string> Stems(IEnumerable<string> tokens) =>
         tokens.Select(Stem).Distinct(StringComparer.Ordinal).ToList();
@@ -165,7 +197,6 @@ public static class SearchText
         return index;
     }
 
-    private static bool IsSafeToken(string token) => token.Length > 0 && token.All(char.IsLetterOrDigit);
 
     private static IEnumerable<string> Words(string text)
     {
