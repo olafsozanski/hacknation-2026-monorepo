@@ -1,6 +1,6 @@
 import { Box, Breadcrumb, Flex, Heading, Text } from '@chakra-ui/react'
 import { ChevronRight } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { Link as RouterLink } from 'react-router'
 import { usePageTitle } from './usePageTitle'
 
@@ -24,20 +24,22 @@ export function PageHeader({ title, eyebrow, description, actions, breadcrumbs, 
         <Breadcrumb.Root mb="3" size="sm" aria-label="Ścieżka nawigacji">
           <Breadcrumb.List>
             {breadcrumbs.map((crumb, index) => (
-              <Breadcrumb.Item key={crumb.label}>
-                {crumb.to ? (
-                  <Breadcrumb.Link asChild color="brand.fg" textDecoration="underline">
-                    <RouterLink to={crumb.to}>{crumb.label}</RouterLink>
-                  </Breadcrumb.Link>
-                ) : (
-                  <Breadcrumb.CurrentLink>{crumb.label}</Breadcrumb.CurrentLink>
-                )}
+              <Fragment key={crumb.label}>
+                <Breadcrumb.Item>
+                  {crumb.to ? (
+                    <Breadcrumb.Link asChild color="brand.fg" textDecoration="underline">
+                      <RouterLink to={crumb.to}>{crumb.label}</RouterLink>
+                    </Breadcrumb.Link>
+                  ) : (
+                    <Breadcrumb.CurrentLink>{crumb.label}</Breadcrumb.CurrentLink>
+                  )}
+                </Breadcrumb.Item>
                 {index < breadcrumbs.length - 1 && (
-                  <Breadcrumb.Separator>
-                    <ChevronRight size={14} aria-hidden />
+                  <Breadcrumb.Separator aria-hidden>
+                    <ChevronRight size={14} />
                   </Breadcrumb.Separator>
                 )}
-              </Breadcrumb.Item>
+              </Fragment>
             ))}
           </Breadcrumb.List>
         </Breadcrumb.Root>

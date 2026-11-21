@@ -42,6 +42,7 @@ export function SourceStep({ busy, error, onFile, onText, onManual }: SourceStep
             maxFiles={1}
             maxFileSize={20 * 1024 * 1024}
             disabled={busy}
+            translations={{ dropzone: 'Przeciągnij tutaj plik lub kliknij, aby wybrać PDF, DOCX lub TXT, do 20 MB' }}
             onFileAccept={(details) => {
               setRejection(null)
               if (details.files[0]) onFile(details.files[0])
@@ -76,12 +77,12 @@ export function SourceStep({ busy, error, onFile, onText, onManual }: SourceStep
                 </Text>
                 <Text color="fg.muted">PDF, DOCX lub TXT, do 20 MB</Text>
               </FileUpload.DropzoneContent>
-              <Text fontSize="sm" color="fg.muted" maxW="lg" textAlign="center">
-                Asystent odczyta treść, zaproponuje przedmiot i dane wnioskodawcy, wyliczy termin oraz wyszuka podobne
-                sprawy z ostatniego roku.
-              </Text>
             </FileUpload.Dropzone>
           </FileUpload.Root>
+          <Text fontSize="sm" color="fg.muted">
+            Asystent odczyta treść, zaproponuje przedmiot i dane wnioskodawcy, wyliczy termin oraz wyszuka podobne sprawy z
+            ostatniego roku.
+          </Text>
         </Card.Body>
       </Card.Root>
 

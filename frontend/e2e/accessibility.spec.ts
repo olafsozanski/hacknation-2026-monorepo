@@ -1,9 +1,22 @@
 import { expect, test } from '@playwright/test'
-import { expectNoAccessibilityViolations, login } from './support'
+import { expectNoAccessibilityViolations } from './support'
 
-test('login page meets WCAG 2.1 AA', async ({ page }) => {
-  await page.goto('/logowanie')
-  await expectNoAccessibilityViolations(page)
+test.describe('signed out', () => {
+  test.use({ storageState: { cookies: [], origins: [] } })
+
+  test('login page meets WCAG 2.1 AA', async ({ page }) => {
+    await page.goto('/logowanie')
+    await expectNoAccessibilityViolations(page)
+  })
+})
+
+test('skip link moves focus to main content', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('link', { name: 'Przejdź do treści głównej' })).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.locator('#main-content')).toBeFocused()
 })
 
 const pages = [
@@ -19,7 +32,6 @@ const pages = [
 
 for (const { path, heading } of pages) {
   test(`${path} meets WCAG 2.1 AA`, async ({ page }) => {
-    await login(page)
     await page.goto(path)
     await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible()
     await page.waitForLoadState('networkidle')
@@ -28,7 +40,7 @@ for (const { path, heading } of pages) {
 }
 
 test('high contrast mode meets WCAG 2.1 AA', async ({ page }) => {
-  await login(page)
+  await page.goto('/')
   await page.getByRole('button', { name: 'Wersja kontrastowa' }).click()
   await page.waitForLoadState('networkidle')
   await expectNoAccessibilityViolations(page)

@@ -1,4 +1,4 @@
-import { Avatar, Box, Flex, HStack, Link, Table, Tag, Text, chakra } from '@chakra-ui/react'
+import { Avatar, Box, Flex, Link, Table, Text, chakra } from '@chakra-ui/react'
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link as RouterLink, useNavigate } from 'react-router'
@@ -128,19 +128,9 @@ export function RequestTable({ items, caption }: { items: RequestListItem[]; cap
                   <StatusBadge status={item.status} extensionDays={item.extensionDays} short />
                 </Table.Cell>
                 <Table.Cell hideBelow="xl">
-                  <HStack gap="1" wrap="wrap">
-                    {item.departmentSymbols.length === 0 ? (
-                      <Text color="fg.subtle" fontSize="sm">
-                        —
-                      </Text>
-                    ) : (
-                      item.departmentSymbols.map((symbol) => (
-                        <Tag.Root key={symbol} size="sm" variant="outline">
-                          <Tag.Label>{symbol}</Tag.Label>
-                        </Tag.Root>
-                      ))
-                    )}
-                  </HStack>
+                  <Text fontSize="sm" fontWeight="medium" color={item.departmentSymbols.length ? 'fg' : 'fg.subtle'} whiteSpace="nowrap">
+                    {item.departmentSymbols.length ? item.departmentSymbols.join(', ') : '—'}
+                  </Text>
                 </Table.Cell>
                 <Table.Cell textAlign="center">
                   {item.assignee ? (

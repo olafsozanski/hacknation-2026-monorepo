@@ -37,10 +37,10 @@ export function CaseDetailsPanel({ request }: { request: RequestDetail }) {
       <DataList.Root orientation="horizontal" size="sm" gap="2.5">
         {rows.map(([label, value]) => (
           <DataList.Item key={label} alignItems="flex-start">
-            <DataList.ItemLabel minW="40" color="fg.muted">
+            <DataList.ItemLabel minW="32" maxW="32" color="fg.muted">
               {label}
             </DataList.ItemLabel>
-            <DataList.ItemValue fontWeight="medium" wordBreak="break-word">
+            <DataList.ItemValue fontWeight="medium" overflowWrap="anywhere">
               {value}
             </DataList.ItemValue>
           </DataList.Item>

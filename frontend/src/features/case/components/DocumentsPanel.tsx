@@ -105,7 +105,8 @@ function DocumentItem({ request, document }: { request: RequestDetail; document:
 
 export function DocumentsPanel({ request }: { request: RequestDetail }) {
   const upload = useUploadDocument(request.id)
-  const [departmentId, setDepartmentId] = useState('')
+  const awaiting = request.departments.find((d) => !d.answeredOn) ?? request.departments[0]
+  const [departmentId, setDepartmentId] = useState(awaiting?.departmentId ?? '')
   const [kind, setKind] = useState<DocumentKind>('DepartmentReply')
   const documents = request.documents.filter((d) => d.kind !== 'Request')
 

@@ -50,14 +50,14 @@ export function SummaryTiles({ summary, active, onToggle }: SummaryTilesProps) {
             overflow="hidden"
           >
             {highlighted && <Box position="absolute" insetY="0" left="0" w="1" bg={`${tile.palette}.solid`} aria-hidden />}
-            <Flex align="center" gap="2" color={highlighted ? `${tile.palette}.fg` : 'fg.muted'}>
+            <Flex align="center" gap="2" color={highlighted || pressed ? `${tile.palette}.fg` : 'fg.muted'}>
               <Icon size={16} aria-hidden />
               <Text fontSize="sm" fontWeight="semibold">
                 {tile.label}
               </Text>
             </Flex>
             {summary ? (
-              <Text fontSize="3xl" fontWeight="bold" lineHeight="1.1" mt="1" color={highlighted ? `${tile.palette}.fg` : 'fg'}>
+              <Text fontSize="3xl" fontWeight="bold" lineHeight="1.1" mt="1" color={highlighted || pressed ? `${tile.palette}.fg` : 'fg'}>
                 {count}
                 <Box as="span" srOnly>
                   {` ${plural(count, 'wniosek', 'wnioski', 'wniosków')}`}

@@ -1,13 +1,39 @@
 import { createSystem, defaultConfig, defineConfig } from '@chakra-ui/react'
 import { checkboxAnatomy, nativeSelectAnatomy } from '@chakra-ui/react/anatomy'
 
-const hc = (base: string, highContrast: string) => ({ value: { base, _highContrast: highContrast } })
+const hc = (base: string, highContrast: string) => ({ value: { base, _light: base, _highContrast: highContrast } })
+
+const highContrastPalettes = {
+  gray: '#ffffff',
+  red: '#ff8f8f',
+  orange: '#ffb366',
+  yellow: '#ffeb3b',
+  green: '#6ef59a',
+  blue: '#8fb8ff',
+  purple: '#d9adff',
+  teal: '#66f2e0',
+}
+
+const paletteOverrides = Object.fromEntries(
+  Object.entries(highContrastPalettes).map(([palette, color]) => [
+    palette,
+    {
+      solid: { value: { _highContrast: color } },
+      contrast: { value: { _highContrast: '#000000' } },
+      fg: { value: { _highContrast: color } },
+      muted: { value: { _highContrast: '#1a1a1a' } },
+      subtle: { value: { _highContrast: '#000000' } },
+      emphasized: { value: { _highContrast: '#333333' } },
+      focusRing: { value: { _highContrast: '#ffff00' } },
+    },
+  ]),
+)
 
 const fontStack = "'Open Sans Variable', 'Open Sans', 'Segoe UI', system-ui, sans-serif"
 
 const config = defineConfig({
   conditions: {
-    highContrast: ':where([data-contrast=high]) &',
+    highContrast: '[data-contrast=high] &',
   },
   globalCss: {
     html: {
@@ -60,6 +86,7 @@ const config = defineConfig({
     },
     semanticTokens: {
       colors: {
+        ...paletteOverrides,
         brand: {
           solid: hc('{colors.brand.500}', '#ffff00'),
           contrast: hc('#ffffff', '#000000'),
@@ -93,6 +120,10 @@ const config = defineConfig({
         },
         accent: {
           red: hc('{colors.govRed}', '#ffff00'),
+        },
+        row: {
+          urgent: hc('#fdf1f2', '#000000'),
+          warning: hc('#fff6eb', '#000000'),
         },
       },
     },

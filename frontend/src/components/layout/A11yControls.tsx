@@ -2,7 +2,7 @@ import { Group, IconButton } from '@chakra-ui/react'
 import { Contrast } from 'lucide-react'
 import { textScales, useAccessibility } from '@/app/accessibility'
 
-const scaleLabels = ['Mniejszy tekst', 'Domyślny rozmiar tekstu', 'Większy tekst', 'Największy tekst']
+const scaleLabels = ['mniejszy tekst', 'domyślny rozmiar tekstu', 'większy tekst', 'największy tekst']
 const scaleGlyphs = ['A−', 'A', 'A+', 'A++']
 
 export function A11yControls() {
@@ -14,7 +14,7 @@ export function A11yControls() {
           key={scale}
           size="sm"
           variant={textScale === scale ? 'subtle' : 'ghost'}
-          aria-label={scaleLabels[index]}
+          aria-label={`${scaleGlyphs[index]} – ${scaleLabels[index]}`}
           aria-pressed={textScale === scale}
           onClick={() => setTextScale(scale)}
           fontWeight="bold"

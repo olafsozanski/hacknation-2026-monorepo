@@ -13,6 +13,13 @@ export async function login(page: Page, user = adminUser) {
 
 export async function expectNoAccessibilityViolations(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
-  const summary = results.violations.map((v) => `${v.id} (${v.impact}): ${v.nodes.length}× ${v.help}\n    ${v.nodes[0]?.target.join(' ')}`)
+  const summary = results.violations.map(
+    (v) =>
+      `${v.id} (${v.impact}): ${v.nodes.length}× ${v.help}\n` +
+      v.nodes
+        .slice(0, 4)
+        .map((n) => `    ${n.target.join(' ')} — ${n.failureSummary?.split('\n').slice(1, 2).join(' ').trim()}`)
+        .join('\n'),
+  )
   expect(summary, summary.join('\n')).toEqual([])
 }

@@ -121,12 +121,11 @@ export function DeadlineCalendar({ items, onShowDay }: DeadlineCalendarProps) {
                     <chakra.td
                       key={iso}
                       verticalAlign="top"
-                      h="32"
+                      h="24"
                       p="1.5"
                       borderWidth="1px"
                       borderColor="border.muted"
                       bg={weekend ? 'bg.subtle' : undefined}
-                      opacity={inMonth ? 1 : 0.55}
                       aria-current={isToday ? 'date' : undefined}
                     >
                       <Flex justify="space-between" align="center" mb="1">
@@ -135,7 +134,7 @@ export function DeadlineCalendar({ items, onShowDay }: DeadlineCalendarProps) {
                           fontSize="sm"
                           fontWeight={isToday ? 'bold' : 'medium'}
                           bg={isToday ? 'brand.solid' : undefined}
-                          color={isToday ? 'brand.contrast' : weekend ? 'fg.subtle' : 'fg'}
+                          color={isToday ? 'brand.contrast' : weekend || !inMonth ? 'fg.subtle' : 'fg'}
                           borderRadius="full"
                           minW="6"
                           h="6"
@@ -178,15 +177,15 @@ export function DeadlineCalendar({ items, onShowDay }: DeadlineCalendarProps) {
                                 textDecoration="none"
                                 _hover={{ textDecoration: 'underline' }}
                               >
-                                <RouterLink
-                                  to={`/wnioski/${item.id}`}
-                                  aria-label={`${item.caseNumber}: ${item.subject}. ${deadlineLabel(item.urgency, item.daysLeft)}`}
-                                >
+                                <RouterLink to={`/wnioski/${item.id}`}>
                                   <Text as="span" fontWeight="bold" display="block" truncate>
                                     {item.caseNumber}
                                   </Text>
                                   <Text as="span" display="block" truncate>
                                     {item.subject}
+                                  </Text>
+                                  <Text as="span" srOnly>
+                                    {`. ${deadlineLabel(item.urgency, item.daysLeft)}`}
                                   </Text>
                                 </RouterLink>
                               </Link>

@@ -22,11 +22,14 @@ export function UserMenu() {
     <>
       <Menu.Root positioning={{ placement: 'bottom-end' }}>
         <Menu.Trigger asChild>
-          <Button variant="ghost" size="sm" px="2" gap="2" aria-label={`Konto: ${user.fullName}`}>
+          <Button variant="ghost" size="sm" px="2" gap="2">
             <Avatar.Root size="xs" colorPalette="brand" variant="solid">
-              <Avatar.Fallback>{user.initials}</Avatar.Fallback>
+              <Avatar.Fallback aria-hidden>{user.initials}</Avatar.Fallback>
             </Avatar.Root>
             <Box as="span" hideBelow="lg" fontWeight="semibold">
+              {user.fullName}
+            </Box>
+            <Box as="span" srOnly hideFrom="lg">
               {user.fullName}
             </Box>
             <ChevronDown size={16} aria-hidden />
