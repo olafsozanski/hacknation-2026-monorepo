@@ -25,6 +25,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ConcurrencyExceptionHandler>();
 builder.Services.AddValidation();
 builder.Services.AddOpenApi();
+builder.Services.AddHealthChecks();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<AppClock>();
 builder.Services.AddSingleton<AiClients>();
@@ -51,6 +52,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi().AllowAnonymous();
 }
 
+app.MapHealthChecks("/health").AllowAnonymous();
 app.MapFeatures();
 app.MapFallbackToFile("index.html").AllowAnonymous();
 

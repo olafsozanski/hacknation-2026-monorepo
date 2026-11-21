@@ -1,0 +1,49 @@
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: udip
+      POSTGRES_USER: udip
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U udip -d udip"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Database: Host=db;Database=udip;Username=udip;Password=${POSTGRES_PASSWORD}
+      Seed__AdminPassword: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
+      Seed__DemoData: ${DEMO_DATA:-false}
+      Seed__DemoPassword: ${DEMO_PASSWORD:-}
+      Organization__Name: ${ORGANIZATION_NAME:-Urząd Miasta Bydgoszczy}
+      Organization__UnitName: ${ORGANIZATION_UNIT:-Biuro Komunikacji Społecznej}
+      Organization__CaseNumberPrefix: ${CASE_NUMBER_PREFIX:-BKS.1431}
+      Ai__Provider: ${AI_PROVIDER:-OpenAI}
+      Ai__Endpoint: ${AI_ENDPOINT:-}
+      Ai__ApiKey: ${AI_API_KEY:-}
+      Ai__ChatModel: ${AI_CHAT_MODEL:-gpt-5-mini}
+      Ai__EmbeddingModel: ${AI_EMBEDDING_MODEL:-text-embedding-3-small}
+      Ai__IsLocal: ${AI_IS_LOCAL:-false}
+    ports:
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-8080}:8080"
+
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["local-ai"]
+    restart: unless-stopped
+    volumes:
+      - ollama-models:/root/.ollama
+
+volumes:
+  db-data:
+  ollama-models:
