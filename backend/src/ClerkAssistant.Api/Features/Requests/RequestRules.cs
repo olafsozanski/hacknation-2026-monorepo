@@ -1,4 +1,5 @@
 using ClerkAssistant.Api.Domain;
+using ClerkAssistant.Api.Infrastructure.Common;
 using ClerkAssistant.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -10,6 +11,14 @@ public sealed record KnownDepartment(Guid Id, string Symbol);
 public static class RequestRules
 {
     public const string CaseNumberIndex = "ix_requests_case_number";
+
+    public static NotFoundException RequestNotFound() => new("Nie znaleziono wniosku.");
+
+    public static async Task<InfoRequest> FindRequestAsync(this AppDbContext db, Guid id, CancellationToken ct) =>
+        await db.Requests.FirstOrDefaultAsync(r => r.Id == id, ct) ?? throw RequestNotFound();
+
+    public static ValidationException DuplicateCaseNumberError(string caseNumber) =>
+        ValidationException.For("caseNumber", DuplicateCaseNumber(caseNumber));
 
     public static void CheckDates(this ValidationErrors errors, DateOnly receivedOn, DateOnly dueOn, DateOnly today)
     {

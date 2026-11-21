@@ -23,6 +23,8 @@ public record RequestListItem(
     UserSummary? Assignee,
     string[] DepartmentSymbols);
 
+public record RegisterFilter(int? Year, RequestStatus? Status, Guid? AssigneeId, string? Search, DateOnly? DueOn);
+
 public record RegisterSummary(
     int Overdue,
     int DueToday,

@@ -24,10 +24,12 @@ public static class RequestLetters
             LetterLayout.Footer(organization));
     }
 
-    public static DepartmentQueryDto DepartmentQuery(
+    public static string DepartmentQuerySubject(InfoRequest request, DateOnly replyBy) =>
+        $"Wniosek o udostępnienie informacji publicznej {request.CaseNumber} – prośba o informacje do {LetterLayout.LongDate(replyBy)}";
+
+    public static string DepartmentQueryBody(
         InfoRequest request, IReadOnlyList<Department> departments, DateOnly replyBy, OrganizationOptions organization)
     {
-        var subject = $"Wniosek o udostępnienie informacji publicznej {request.CaseNumber} – prośba o informacje do {LetterLayout.LongDate(replyBy)}";
         var recipients = departments.Count == 0
             ? ""
             : "Do: " + string.Join("; ", departments.Select(d => $"{d.Name} ({d.Symbol})")) + Paragraph;
@@ -35,7 +37,7 @@ public static class RequestLetters
             ? "(treść wniosku nie została wprowadzona do rejestru – znajduje się w dokumentach sprawy)"
             : request.Content.Trim();
 
-        var body = recipients + $"""
+        return recipients + $"""
             Szanowni Państwo,
 
             w dniu {LetterLayout.LongDate(request.ReceivedOn)} wpłynął wniosek o udostępnienie informacji publicznej (znak sprawy: {request.CaseNumber}) dotyczący: „{request.Subject}”.
@@ -51,8 +53,6 @@ public static class RequestLetters
 
             {LetterLayout.Closing(organization)}
             """;
-
-        return new DepartmentQueryDto(subject, body, replyBy);
     }
 
     private static string QueryBody(InfoRequest request, Addressee addressee, DateOnly extendedDueOn) =>
