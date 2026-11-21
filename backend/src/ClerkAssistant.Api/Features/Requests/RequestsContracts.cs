@@ -48,7 +48,8 @@ public record DraftSummary(
     DateTimeOffset UpdatedAt,
     bool GeneratedByAi,
     int SuggestedRedactions,
-    int ApprovedRedactions);
+    int ApprovedRedactions,
+    uint Version);
 
 public record RequestDetail(
     Guid Id,

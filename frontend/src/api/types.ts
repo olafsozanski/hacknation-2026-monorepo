@@ -99,6 +99,7 @@ export type DraftSummary = {
   generatedByAi: boolean
   suggestedRedactions: number
   approvedRedactions: number
+  version: number
 }
 
 export type RequestDetail = {

@@ -1,5 +1,5 @@
 import { Alert, Badge, Button, Flex, Stack, Text } from '@chakra-ui/react'
-import { CheckCircle2, Download, FilePen, Send, Sparkles } from 'lucide-react'
+import { CheckCircle2, Download, FilePen, RefreshCw, Send, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import type { RequestDetail } from '@/api/types'
@@ -15,16 +15,21 @@ export function ResponsePanel({ request }: { request: RequestDetail }) {
   const generate = useGenerateDraft(request.id)
   const changeStatus = useChangeStatus(request.id)
   const [confirmSent, setConfirmSent] = useState(false)
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false)
   const replies = request.documents.filter((d) => d.kind === 'DepartmentReply').length
   const draft = request.draft
 
-  const runGenerate = () =>
-    generate.mutate(undefined, {
+  const runGenerate = (version?: number) =>
+    generate.mutate(version, {
       onSuccess: (result) => {
+        setConfirmRegenerate(false)
         for (const warning of result.warnings) notifyError(new Error(warning), 'Uwaga')
         navigate(`/wnioski/${request.id}/odpowiedz`)
       },
-      onError: (e) => notifyError(e, 'Nie udało się przygotować projektu'),
+      onError: (e) => {
+        setConfirmRegenerate(false)
+        notifyError(e, 'Nie udało się przygotować projektu')
+      },
     })
 
   const setStatus = (status: 'ResponsePrepared' | 'ResponseSent') =>
@@ -57,7 +62,7 @@ export function ResponsePanel({ request }: { request: RequestDetail }) {
             </Alert.Root>
           )}
           <Flex gap="3" align="center" wrap="wrap">
-            <Button onClick={runGenerate} loading={generate.isPending} loadingText="Przygotowuję projekt…">
+            <Button onClick={() => runGenerate()} loading={generate.isPending} loadingText="Przygotowuję projekt…">
               <Sparkles size={16} aria-hidden /> Przygotuj projekt odpowiedzi
             </Button>
             {replies > 0 && (
@@ -98,6 +103,9 @@ export function ResponsePanel({ request }: { request: RequestDetail }) {
             <Button variant="outline" onClick={() => exportDraft(request.id, request.caseNumber, 'docx').catch((e) => notifyError(e))}>
               <Download size={16} aria-hidden /> Pobierz DOCX
             </Button>
+            <Button variant="outline" onClick={() => setConfirmRegenerate(true)}>
+              <RefreshCw size={16} aria-hidden /> Przygotuj ponownie
+            </Button>
             {request.status !== 'ResponsePrepared' && request.status !== 'ResponseSent' && (
               <Button variant="outline" onClick={() => setStatus('ResponsePrepared')} loading={changeStatus.isPending}>
                 <CheckCircle2 size={16} aria-hidden /> Oznacz jako przygotowaną
@@ -122,6 +130,20 @@ export function ResponsePanel({ request }: { request: RequestDetail }) {
         Sprawa zostanie zamknięta z dzisiejszą datą udzielenia odpowiedzi. Asystent niczego nie wysyła — potwierdź, że
         odpowiedź została przekazana wnioskodawcy.
       </ConfirmDialog>
+      {draft && (
+        <ConfirmDialog
+          open={confirmRegenerate}
+          title="Przygotować projekt ponownie?"
+          confirmLabel="Zastąp obecny projekt"
+          destructive
+          loading={generate.isPending}
+          onCancel={() => setConfirmRegenerate(false)}
+          onConfirm={() => runGenerate(draft.version)}
+        >
+          Nowy projekt powstanie na podstawie aktualnych odpowiedzi wydziałów i zastąpi obecną treść oraz decyzje
+          dotyczące anonimizacji.
+        </ConfirmDialog>
+      )}
     </Panel>
   )
 }
