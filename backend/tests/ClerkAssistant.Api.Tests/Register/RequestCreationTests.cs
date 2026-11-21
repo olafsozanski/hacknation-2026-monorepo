@@ -1,9 +1,7 @@
 using System.Net.Http.Json;
 using ClerkAssistant.Api.Domain;
 using ClerkAssistant.Api.Features.Requests;
-using ClerkAssistant.Api.Infrastructure.Persistence;
 using ClerkAssistant.Api.Tests.Infrastructure;
-using Microsoft.Extensions.DependencyInjection;
 using static ClerkAssistant.Api.Tests.Register.RegisterApi;
 
 namespace ClerkAssistant.Api.Tests.Register;
@@ -96,7 +94,7 @@ public class RequestCreationTests(ApiFactory factory) : IClassFixture<ApiFactory
     {
         factory.SetToday(Today);
         var client = await factory.CreateAuthenticatedClientAsync();
-        var fileId = await StoreFileAsync("Wnoszę o udostępnienie liczby wydanych kart parkingowych.");
+        var fileId = await factory.StoreFileAsync("Wnoszę o udostępnienie liczby wydanych kart parkingowych.");
         var wgk = await client.DepartmentIdAsync("WGK");
 
         var detail = await client.GetRequestAsync(await client.CreateRequestAsync(
@@ -112,24 +110,5 @@ public class RequestCreationTests(ApiFactory factory) : IClassFixture<ApiFactory
         Assert.Equal("Administrator", document.UploadedBy);
         Assert.Equal("WGK", Assert.Single(detail.Departments).Symbol);
         Assert.Contains("sourceFileId", (await reuse.ValidationErrorsAsync()).Keys);
-    }
-
-    private async Task<Guid> StoreFileAsync(string text)
-    {
-        await using var scope = factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var file = new StoredFile
-        {
-            FileName = "wniosek.txt",
-            ContentType = "text/plain; charset=utf-8",
-            Content = System.Text.Encoding.UTF8.GetBytes(text),
-            SizeBytes = text.Length,
-            Sha256 = new string('0', 64),
-            ExtractedText = text,
-            CreatedAt = factory.Clock.GetUtcNow(),
-        };
-        db.Files.Add(file);
-        await db.SaveChangesAsync(Ct);
-        return file.Id;
     }
 }

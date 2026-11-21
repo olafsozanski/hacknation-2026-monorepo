@@ -11,6 +11,11 @@ public sealed class RequestRegisterService(AppDbContext db, AppClock clock)
 
     public async Task<RequestListItem[]> ListAsync(RegisterFilter filter, CancellationToken ct)
     {
+        if (filter.Status is { } requestedStatus && !Enum.IsDefined(requestedStatus))
+        {
+            throw ValidationException.For("status", RequestRules.UnknownStatus);
+        }
+
         var today = clock.Today;
         var query = Matching(InRegisterOf(filter.Year ?? today.Year), filter.Search);
         if (filter.Status is { } status)

@@ -24,6 +24,11 @@ public sealed class DocumentService(
             throw new NotFoundException("Nie znaleziono wniosku.");
         }
 
+        if (kind is { } requestedKind && !Enum.IsDefined(requestedKind))
+        {
+            throw ValidationException.For("kind", "Nieprawidłowy rodzaj dokumentu.");
+        }
+
         if (file is null)
         {
             throw ValidationException.For("file", "Wybierz plik do przesłania.");
@@ -58,31 +63,38 @@ public sealed class DocumentService(
         return (await ToDtosAsync(db.RequestDocuments.Where(d => d.Id == document.Id), ct)).Single();
     }
 
-    public async Task<DocumentContent> DownloadAsync(Guid id, CancellationToken ct) =>
-        await FileOf(id).ProjectToContent().FirstOrDefaultAsync(ct) ?? throw DocumentNotFound();
+    public async Task<DocumentContent> DownloadAsync(Guid id, CancellationToken ct)
+    {
+        var document = await FindAsync(id, ct);
+        var content = await FileOf(id).ProjectToContent().FirstAsync(ct);
+        await RecordAccessAsync("document.downloaded", document, ct);
+        return content;
+    }
 
-    public async Task<DocumentText> GetTextAsync(Guid id, CancellationToken ct) =>
-        await FileOf(id).ProjectToText().FirstOrDefaultAsync(ct) ?? throw DocumentNotFound();
+    public async Task<DocumentText> GetTextAsync(Guid id, CancellationToken ct)
+    {
+        var document = await FindAsync(id, ct);
+        var text = await FileOf(id).ProjectToText().FirstAsync(ct);
+        await RecordAccessAsync("document.text-viewed", document, ct);
+        return text;
+    }
 
     public async Task DeleteAsync(Guid id, CancellationToken ct)
     {
-        var document = await db.RequestDocuments
-            .Where(d => d.Id == id)
-            .Select(d => new
-            {
-                d.RequestId,
-                d.FileId,
-                d.Kind,
-                DepartmentSymbol = d.Department == null ? null : d.Department.Symbol,
-                d.File.FileName,
-            })
-            .FirstOrDefaultAsync(ct)
-            ?? throw DocumentNotFound();
+        var document = await FindAsync(id, ct);
+        if (document.Kind == DocumentKind.Request)
+        {
+            throw ValidationException.For("kind", "Nie można usunąć oryginału wniosku.");
+        }
+
+        if (document.UploadedById != current.Id && !current.IsInRole(Roles.Admin))
+        {
+            throw new ForbiddenException("Dokument może usunąć tylko osoba, która go dodała, albo administrator.");
+        }
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         await db.Files.Where(f => f.Id == document.FileId).ExecuteDeleteAsync(ct);
-        audit.Record("document.deleted", nameof(InfoRequest), document.RequestId,
-            Describe(document.Kind, document.DepartmentSymbol, document.FileName));
+        audit.Record("document.deleted", nameof(InfoRequest), document.RequestId, Describe(document));
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
     }
@@ -95,6 +107,15 @@ public sealed class DocumentService(
             .Where(u => uploaderIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, u => u.FullName, ct);
         return metadata.Select(d => d.ToDto(uploaders.GetValueOrDefault(d.UploadedById, ""))).ToArray();
+    }
+
+    private async Task<DocumentMetadata> FindAsync(Guid id, CancellationToken ct) =>
+        await db.RequestDocuments.Where(d => d.Id == id).ProjectToMetadata().FirstOrDefaultAsync(ct) ?? throw DocumentNotFound();
+
+    private async Task RecordAccessAsync(string action, DocumentMetadata document, CancellationToken ct)
+    {
+        audit.Record(action, nameof(InfoRequest), document.RequestId, Describe(document));
+        await db.SaveChangesAsync(ct);
     }
 
     private IQueryable<StoredFile> FileOf(Guid documentId) =>
@@ -114,6 +135,9 @@ public sealed class DocumentService(
     }
 
     private static NotFoundException DocumentNotFound() => new("Nie znaleziono dokumentu.");
+
+    private static string Describe(DocumentMetadata document) =>
+        Describe(document.Kind, document.DepartmentSymbol, document.FileName);
 
     private static string Describe(DocumentKind kind, string? departmentSymbol, string fileName)
     {

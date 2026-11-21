@@ -40,6 +40,7 @@ public sealed class RequestCaseService(
         var dueOn = body.DueOn ?? Deadlines.InitialDueDate(body.ReceivedOn);
         var caseNumber = RequestRules.Clean(body.CaseNumber);
         var errors = new ValidationErrors();
+        errors.CheckDefined("replyChannel", body.ReplyChannel, RequestRules.UnknownReplyChannel);
         errors.CheckDates(body.ReceivedOn, dueOn, clock.Today);
         if (caseNumber is not null)
         {
@@ -88,6 +89,7 @@ public sealed class RequestCaseService(
         var request = await db.FindRequestAsync(id, ct);
         var caseNumber = body.CaseNumber.Trim();
         var errors = new ValidationErrors();
+        errors.CheckDefined("replyChannel", body.ReplyChannel, RequestRules.UnknownReplyChannel);
         errors.CheckDates(body.ReceivedOn, body.DueOn, clock.Today);
         if (caseNumber != request.CaseNumber)
         {

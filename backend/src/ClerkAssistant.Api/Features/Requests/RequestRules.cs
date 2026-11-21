@@ -20,6 +20,18 @@ public static class RequestRules
     public static ValidationException DuplicateCaseNumberError(string caseNumber) =>
         ValidationException.For("caseNumber", DuplicateCaseNumber(caseNumber));
 
+    public const string UnknownStatus = "Nieprawidłowy status sprawy.";
+    public const string UnknownReplyChannel = "Nieprawidłowy sposób udzielenia odpowiedzi.";
+
+    public static void CheckDefined<TEnum>(this ValidationErrors errors, string field, TEnum value, string message)
+        where TEnum : struct, Enum
+    {
+        if (!Enum.IsDefined(value))
+        {
+            errors.Add(field, message);
+        }
+    }
+
     public static void CheckDates(this ValidationErrors errors, DateOnly receivedOn, DateOnly dueOn, DateOnly today)
     {
         if (receivedOn > today)

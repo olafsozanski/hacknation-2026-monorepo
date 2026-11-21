@@ -1,4 +1,5 @@
 using ClerkAssistant.Api.Domain;
+using ClerkAssistant.Api.Infrastructure.Security;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClerkAssistant.Api.Features.Documents;
@@ -22,7 +23,8 @@ public static class DocumentsEndpoints
                 var created = await documents.UploadAsync(id, file, kind, departmentId, ct);
                 return TypedResults.Created($"/api/documents/{created.Id}/content", created);
             })
-            .DisableAntiforgery();
+            .DisableAntiforgery()
+            .RequireRateLimiting(SecurityExtensions.UploadRateLimit);
 
         var group = api.MapGroup("/documents");
         group.MapGet("/{id:guid}/content", async (Guid id, DocumentService documents, CancellationToken ct) =>

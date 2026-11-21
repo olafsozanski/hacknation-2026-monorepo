@@ -11,4 +11,6 @@ public sealed class CurrentUser(IHttpContextAccessor accessor)
         ?? throw new InvalidOperationException("User is not authenticated."));
 
     public string UserName => Principal.Identity?.Name ?? "unknown";
+
+    public bool IsInRole(string role) => Principal.IsInRole(role);
 }

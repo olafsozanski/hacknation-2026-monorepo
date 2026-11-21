@@ -5,6 +5,8 @@ namespace ClerkAssistant.Api.Features.Documents;
 
 public sealed record DocumentMetadata(
     Guid Id,
+    Guid RequestId,
+    Guid FileId,
     DocumentKind Kind,
     string FileName,
     long SizeBytes,

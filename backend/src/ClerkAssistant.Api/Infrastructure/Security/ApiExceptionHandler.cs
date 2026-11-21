@@ -14,6 +14,7 @@ public sealed class ApiExceptionHandler(IProblemDetailsService problemDetails) :
         {
             NotFoundException e => new ProblemDetails { Status = StatusCodes.Status404NotFound, Detail = e.Message },
             ConflictException e => new ProblemDetails { Status = StatusCodes.Status409Conflict, Detail = e.Message },
+            ForbiddenException e => new ProblemDetails { Status = StatusCodes.Status403Forbidden, Detail = e.Message },
             AuthenticationFailedException e => new ProblemDetails
             {
                 Status = e.LockedOut ? StatusCodes.Status423Locked : StatusCodes.Status401Unauthorized,

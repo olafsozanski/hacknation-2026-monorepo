@@ -20,6 +20,7 @@ public sealed class RequestWorkflowService(
             ? body.RespondedOn ?? request.RespondedOn ?? today
             : null;
         var errors = new ValidationErrors();
+        errors.CheckDefined("status", body.Status, RequestRules.UnknownStatus);
         if (body.Status == RequestStatus.Extended && request.ExtendedDueOn is null)
         {
             errors.Add("status", "Aby oznaczyć sprawę jako przedłużoną, użyj opcji przedłużenia terminu i podaj powód opóźnienia.");
@@ -51,6 +52,11 @@ public sealed class RequestWorkflowService(
 
     public async Task<ExtensionResult> ExtendAsync(Guid id, ExtendDeadlineRequest body, CancellationToken ct)
     {
+        if (!Enum.IsDefined(body.Kind))
+        {
+            throw ValidationException.For("kind", "Nieprawidłowy rodzaj przedłużenia terminu.");
+        }
+
         var request = await db.FindRequestAsync(id, ct);
         if (request.IsClosed)
         {
