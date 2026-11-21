@@ -88,18 +88,39 @@ biznesową i mapperem (Mapperly, mapowanie generowane w czasie kompilacji). Szcz
 
 ## Bezpieczeństwo
 
-- Brak samodzielnej rejestracji — konta zakłada administrator; hasła min. 12 znaków, blokada po 5
-  nieudanych próbach, limit prób logowania na adres IP.
-- Sesja w ciasteczku `HttpOnly`, `SameSite=Strict`, `Secure` (poza Development); ochrona CSRF
-  dla wszystkich operacji zmieniających dane; nagłówki CSP, `X-Frame-Options`, `nosniff`.
-- Każde żądanie API wymaga zalogowania; operacje administracyjne — roli administratora.
-- Dziennik zdarzeń (audyt) dla spraw, dokumentów i kont; treść dokumentów nie trafia do logów.
-- Przesyłane pliki: limit 20 MB, weryfikacja sygnatury, ochrona przed „zip bomb”, przechowywanie
-  w bazie (bez wykonywania), pobieranie wyłącznie jako załącznik.
-- Treści z dokumentów i odpowiedzi modelu traktowane są jako niezaufane (ochrona przed prompt
-  injection, brak renderowania HTML).
-- W trybie prototypu z OpenAI treści opuszczają sieć urzędu — interfejs wyraźnie to sygnalizuje.
-  Docelowo należy używać wyłącznie modelu lokalnego.
-- Udostępnianie poza `localhost` wyłącznie przez HTTPS: reverse proxy (IIS, nginx) oraz `REQUIRE_HTTPS=true`
-  i `TRUST_FORWARDED_HEADERS=true` w `.env` (ciasteczka `Secure`, HSTS). Domyślnie aplikacja nasłuchuje tylko na
-  `127.0.0.1`.
+- **Konta i sesje** — brak samodzielnej rejestracji (konta zakłada administrator); hasła min. 12 znaków;
+  blokada po 5 nieudanych próbach i limit prób logowania; sesja w ciasteczku `HttpOnly`, `SameSite=Strict`,
+  `Secure` z prefiksem `__Host-` (przy HTTPS), wygasa najpóźniej 12 godzin od zalogowania; wylogowanie,
+  dezaktywacja konta, zmiana uprawnień lub hasła unieważniają wszystkie kopie sesji. Przykładowe hasła
+  z dokumentacji są odrzucane poza trybem deweloperskim.
+- **Uprawnienia** — każde żądanie API wymaga zalogowania; konta, dziennik zdarzeń i usuwanie dokumentów
+  z bazy wiedzy — tylko administrator; oryginału wniosku nie można usunąć, inne dokumenty usuwa ich autor
+  lub administrator.
+- **Ochrona żądań** — CSRF dla wszystkich operacji zmieniających dane; nagłówki CSP, `X-Frame-Options`,
+  `nosniff`, `no-store` dla API; limity liczby żądań (logowanie, AI, przesyłanie plików, wyszukiwanie);
+  przy `REQUIRE_HTTPS=true` połączenia HTTP są odrzucane, a nagłówki `X-Forwarded-*` przyjmowane tylko
+  od wskazanego serwera proxy.
+- **Dziennik zdarzeń** — logowania (także nieudane), zmiany uprawnień, operacje na sprawach i dokumentach,
+  pobrania dokumentów, eksport i anonimizacja; tabela tylko do dopisywania (wyzwalacz w bazie blokuje
+  zmianę i usuwanie wpisów); podgląd dla administratora. Treść dokumentów i dane osobowe nie trafiają
+  do logów technicznych.
+- **Pliki** — limit 20 MB, weryfikacja sygnatury, ochrona przed „zip bomb”, limit czasu i równoległości
+  odczytu, limit pamięci procesu w kontenerze; przechowywanie w bazie, pobieranie wyłącznie jako załącznik.
+- **AI** — domyślnie wyłączone. Model lokalny działa tylko przy adresie w sieci wewnętrznej
+  (`AI_IS_LOCAL=true`); zewnętrzne API wymaga jawnej zgody `AI_ALLOW_EXTERNAL_PROCESSING=true`
+  (wyłącznie prototyp i dane testowe), a interfejs wyraźnie oznacza ten tryb. Treści dokumentów i odpowiedzi
+  modelu są traktowane jako niezaufane (ograniczniki w promptach, brak renderowania HTML, propozycje AI
+  zawsze zatwierdza urzędnik, ostrzeżenie przed eksportem pisma bez anonimizacji).
+- **Klucze** — klucze ochrony danych ASP.NET przechowywane w bazie; opcjonalnie szyfrowane certyfikatem
+  (`Security__DataProtectionCertificatePath`).
+- **Wdrożenie** — kontener bez uprawnień roota, system plików tylko do odczytu, bez dodatkowych
+  uprawnień jądra, z limitami pamięci i CPU; baza niedostępna z zewnątrz; domyślnie nasłuchiwanie tylko na
+  `127.0.0.1`. Dostęp z innych komputerów wyłącznie przez HTTPS (reverse proxy) — patrz `.env.example`.
+
+### Zalecenia przed wdrożeniem produkcyjnym
+
+- logowanie przez Active Directory / Entra ID (MFA, centralne wyłączanie kont),
+- odczyt dokumentów w osobnym procesie z limitami zasobów (izolacja parserów PDF/DOCX),
+- pseudonimizacja danych przed przekazaniem do modelu (jeśli kiedykolwiek używany będzie model zewnętrzny),
+- polityka retencji i archiwizacji zgodna z instrukcją kancelaryjną (JRWA kat. archiwalna dla klasy 1431),
+- regularne kopie zapasowe bazy (zawiera dokumenty i klucze sesji).
