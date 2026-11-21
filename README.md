@@ -3,16 +3,26 @@
 Narzędzie wspierające urzędników Urzędu Miasta Bydgoszczy w obsłudze wniosków o udostępnienie
 informacji publicznej (UDIP). Skraca przygotowanie odpowiedzi z kilku dni do kilkunastu minut:
 
-- **Rejestr i kalendarz wniosków** — terminy liczone automatycznie (art. 13 UDIP, art. 57 KPA, dni
-  wolne od pracy), wyróżnienie spraw po terminie, na dziś i na jutro, kwerenda z limitem 2 miesięcy.
+- **Rejestr i kalendarz wniosków** — układ kolumn jak w kalendarium urzędu (Lp., numer sprawy,
+  wnioskodawca, przedmiot, daty, osoba odpowiedzialna, pozostało dni); terminy liczone automatycznie
+  (art. 13 UDIP, art. 57 KPA, dni wolne od pracy); wyróżnienie spraw po terminie, na dziś i na jutro;
+  widok tabeli i kalendarza miesięcznego; wybór roku.
+- **Kwerenda i doprecyzowanie** — przedłużenie terminu (limit 2 miesięcy) z gotowym projektem
+  zawiadomienia albo wezwania do doprecyzowania wniosku, w formacie pism urzędu.
 - **Rejestracja z pliku** — PDF/DOCX/TXT; asystent odczytuje treść, proponuje przedmiot i dane
   wnioskodawcy, znak sprawy oraz termin.
 - **Podobne sprawy** — wyszukiwanie hybrydowe (pełnotekstowe + semantyczne) w rejestrze i archiwum.
 - **Sugerowana ścieżka** — wydziały właściwe dla wniosku na podstawie zakresu działania (dane z BIP),
   historii podobnych spraw i analizy AI, ze średnim czasem odpowiedzi wydziału.
-- **Projekt odpowiedzi** — pismo przygotowane z odpowiedzi wydziałów, z miejscami „DO UZUPEŁNIENIA”
-  zamiast zmyślonych danych.
-- **Anonimizacja** — propozycje (szare) zatwierdzane przez urzędnika (czarne), eksport DOCX/TXT.
+- **Projekt odpowiedzi** — pismo w układzie stosowanym przez Biuro Komunikacji Społecznej (nagłówek,
+  znak sprawy, zwrot grzecznościowy, „komórka merytoryczna”, stopka), przygotowane wyłącznie z odpowiedzi
+  wydziałów, z miejscami „DO UZUPEŁNIENIA” zamiast zmyślonych danych.
+- **Anonimizacja** — według listy danych podlegających anonimizacji przekazanej przez urząd (dane
+  osobowe, dane wrażliwe, księgi wieczyste, numery rejestracyjne, tajemnice prawnie chronione);
+  propozycje (szare) zatwierdzane przez urzędnika (czarne), eksport DOCX/TXT. Dostępna w projekcie
+  odpowiedzi oraz jako osobne narzędzie dla dowolnego dokumentu (bez zapisywania go w systemie).
+- **Baza wiedzy** — akty prawne, zarządzenia i archiwalne odpowiedzi (także hurtowo), wykorzystywane
+  w wyszukiwaniu i przy tworzeniu projektów.
 - **Bez automatycznej wysyłki** — program przygotowuje treści do skopiowania; decyzję zawsze
   podejmuje urzędnik.
 
@@ -35,7 +45,9 @@ docker compose up -d --build
 ```
 
 Aplikacja: <http://localhost:8080>, login `admin` i hasło z `ADMIN_PASSWORD`.
-Dane demonstracyjne (10 wniosków + archiwum): `DEMO_DATA=true` i `DEMO_PASSWORD` w `.env`.
+Dane demonstracyjne: `DEMO_DATA=true` i `DEMO_PASSWORD` w `.env` — 10 bieżących wniosków o różnych
+terminach, archiwum z 10 przykładowymi (zanonimizowanymi) sprawami przekazanymi przez urząd
+(`Seed/sample-cases.json`) oraz sprawy fikcyjne; konta urzędników `akowalska`, `pnowak`, `mwisniewska`.
 
 ### Tryb w pełni lokalny (bez Internetu)
 
@@ -68,6 +80,11 @@ Testy:
 cd backend && dotnet test
 cd frontend && npm run lint && npm run typecheck && npm test
 ```
+
+## Architektura backendu
+
+Każda funkcja to folder `Features/<Funkcja>` z kontraktami, cienkimi endpointami, serwisem z logiką
+biznesową i mapperem (Mapperly, mapowanie generowane w czasie kompilacji). Szczegóły w [AGENTS.md](AGENTS.md).
 
 ## Bezpieczeństwo
 
