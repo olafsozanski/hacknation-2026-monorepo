@@ -81,6 +81,11 @@ export const router = createBrowserRouter([
             lazy: () => import('@/features/admin/UsersPage').then((m) => ({ Component: m.UsersPage })),
           },
           {
+            path: 'administracja/dziennik',
+            loader: requireAdmin,
+            lazy: () => import('@/features/admin/AuditPage').then((m) => ({ Component: m.AuditPage })),
+          },
+          {
             path: 'dostepnosc',
             lazy: () =>
               import('@/features/accessibility/AccessibilityPage').then((m) => ({ Component: m.AccessibilityPage })),

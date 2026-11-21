@@ -173,7 +173,9 @@ function Editor({ requestId, caseNumber, status, requestVersion, draft, breadcru
     }
   }
 
-  const requestExport = (format: ExportFormat) => (counts.suggested > 0 || placeholders > 0 ? setPendingExport(format) : void doExport(format))
+  const nothingMarked = redactions.length === 0
+  const requestExport = (format: ExportFormat) =>
+    counts.suggested > 0 || placeholders > 0 || nothingMarked ? setPendingExport(format) : void doExport(format)
 
   const markPrepared = async () => {
     try {
@@ -344,7 +346,8 @@ function Editor({ requestId, caseNumber, status, requestVersion, draft, breadcru
         <Text>
           {counts.suggested > 0 &&
             `${counts.suggested} ${plural(counts.suggested, 'fragment czeka', 'fragmenty czekają', 'fragmentów czeka')} na decyzję — niezweryfikowane dane NIE zostaną ukryte. `}
-          {placeholders > 0 && `Pismo zawiera ${placeholders} ${plural(placeholders, 'miejsce', 'miejsca', 'miejsc')} do uzupełnienia.`}
+          {placeholders > 0 && `Pismo zawiera ${placeholders} ${plural(placeholders, 'miejsce', 'miejsca', 'miejsc')} do uzupełnienia. `}
+          {nothingMarked && 'W piśmie nie wskazano żadnych danych do anonimizacji — upewnij się, że nie zawiera danych osobowych ani informacji chronionych.'}
         </Text>
       </ConfirmDialog>
 

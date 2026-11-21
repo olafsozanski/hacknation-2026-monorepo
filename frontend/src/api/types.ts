@@ -269,3 +269,13 @@ export type UserListItem = {
   isActive: boolean
   isLockedOut: boolean
 }
+
+export type AuditEntry = {
+  id: number
+  at: string
+  userName: string
+  action: string
+  entityType: string
+  entityId: string | null
+  details: string | null
+}

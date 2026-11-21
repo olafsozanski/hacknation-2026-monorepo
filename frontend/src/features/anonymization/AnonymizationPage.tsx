@@ -122,6 +122,7 @@ export function AnonymizationPage() {
   const [mode, setMode] = useState<DocumentMode>('review')
   const [pendingExport, setPendingExport] = useState<Format | null>(null)
   const counts = countByStatus(redactions)
+  const needsConfirmation = counts.suggested > 0 || counts.approved === 0
 
   const start = (source: File | string) =>
     analyze.mutate(source, {
@@ -169,10 +170,10 @@ export function AnonymizationPage() {
                 <Portal>
                   <Menu.Positioner>
                     <Menu.Content>
-                      <Menu.Item value="docx" onSelect={() => (counts.suggested > 0 ? setPendingExport('docx') : void doExport('docx'))}>
+                      <Menu.Item value="docx" onSelect={() => (needsConfirmation ? setPendingExport('docx') : void doExport('docx'))}>
                         Dokument Word (.docx)
                       </Menu.Item>
-                      <Menu.Item value="txt" onSelect={() => (counts.suggested > 0 ? setPendingExport('txt') : void doExport('txt'))}>
+                      <Menu.Item value="txt" onSelect={() => (needsConfirmation ? setPendingExport('txt') : void doExport('txt'))}>
                         Tekst (.txt)
                       </Menu.Item>
                     </Menu.Content>
@@ -256,12 +257,14 @@ export function AnonymizationPage() {
 
       <ConfirmDialog
         open={pendingExport !== null}
-        title="Pobrać dokument mimo niezweryfikowanych fragmentów?"
+        title="Pobrać dokument?"
         confirmLabel="Pobierz mimo to"
         onCancel={() => setPendingExport(null)}
         onConfirm={() => pendingExport && void doExport(pendingExport)}
       >
-        {`${counts.suggested} ${plural(counts.suggested, 'fragment czeka', 'fragmenty czekają', 'fragmentów czeka')} na decyzję — niezweryfikowane dane NIE zostaną ukryte.`}
+        {counts.suggested > 0
+          ? `${counts.suggested} ${plural(counts.suggested, 'fragment czeka', 'fragmenty czekają', 'fragmentów czeka')} na decyzję — niezweryfikowane dane NIE zostaną ukryte.`
+          : 'Żaden fragment nie zostanie ukryty. Upewnij się, że dokument nie zawiera danych osobowych ani informacji chronionych.'}
       </ConfirmDialog>
     </>
   )

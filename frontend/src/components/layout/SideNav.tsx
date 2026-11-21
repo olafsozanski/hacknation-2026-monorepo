@@ -1,5 +1,5 @@
 import { Box, Button, Stack, Text } from '@chakra-ui/react'
-import { Archive, BookOpen, Building2, FilePlus2, Inbox, ShieldCheck, Users, type LucideIcon } from 'lucide-react'
+import { Archive, BookOpen, Building2, FilePlus2, Inbox, ScrollText, ShieldCheck, Users, type LucideIcon } from 'lucide-react'
 import { Link as RouterLink, NavLink } from 'react-router'
 import { useCurrentUser } from '@/features/auth/session'
 
@@ -13,7 +13,10 @@ const mainItems: Item[] = [
   { to: '/wydzialy', label: 'Wydziały i biura', icon: Building2 },
 ]
 
-const adminItems: Item[] = [{ to: '/administracja/uzytkownicy', label: 'Użytkownicy', icon: Users }]
+const adminItems: Item[] = [
+  { to: '/administracja/uzytkownicy', label: 'Użytkownicy', icon: Users },
+  { to: '/administracja/dziennik', label: 'Dziennik zdarzeń', icon: ScrollText },
+]
 
 function NavItem({ item, onNavigate }: { item: Item; onNavigate?: () => void }) {
   const Icon = item.icon

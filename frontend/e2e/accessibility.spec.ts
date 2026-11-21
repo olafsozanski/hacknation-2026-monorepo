@@ -28,6 +28,7 @@ const pages = [
   { path: '/baza-wiedzy', heading: 'Baza wiedzy' },
   { path: '/wydzialy', heading: 'Wydziały i biura' },
   { path: '/administracja/uzytkownicy', heading: 'Użytkownicy' },
+  { path: '/administracja/dziennik', heading: 'Dziennik zdarzeń' },
   { path: '/dostepnosc', heading: 'Deklaracja dostępności' },
 ]
 

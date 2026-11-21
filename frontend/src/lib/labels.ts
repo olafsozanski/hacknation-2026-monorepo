@@ -102,6 +102,22 @@ export const auditActionLabels: Record<string, string> = {
   'draft.saved': 'Zapisano projekt odpowiedzi',
   'draft.exported': 'Pobrano odpowiedź',
   'department.updated': 'Zmieniono dane wydziału',
+  'document.downloaded': 'Pobrano dokument',
+  'document.text-viewed': 'Wyświetlono treść dokumentu',
+  'auth.login': 'Zalogowano',
+  'auth.login-failed': 'Nieudana próba logowania',
+  'auth.locked-out': 'Zablokowano konto po nieudanych próbach',
+  'auth.logout': 'Wylogowano',
+  'auth.password-changed': 'Zmieniono hasło',
+  'user.created': 'Utworzono konto',
+  'user.updated': 'Zmieniono dane konta',
+  'user.role-changed': 'Zmieniono uprawnienia',
+  'user.deactivated': 'Dezaktywowano konto',
+  'user.password-reset': 'Ustawiono nowe hasło',
+  'knowledge.uploaded': 'Dodano dokument do bazy wiedzy',
+  'knowledge.deleted': 'Usunięto dokument z bazy wiedzy',
+  'anonymization.analyzed': 'Sprawdzono dokument pod kątem anonimizacji',
+  'anonymization.exported': 'Pobrano zanonimizowany dokument',
 }
 
 export function deadlineLabel(urgency: Urgency, daysLeft: number) {
