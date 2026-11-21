@@ -60,6 +60,10 @@ test('standalone anonymisation hides personal data in the exported document', as
     .fill('Wnioskodawca: Jan Kowalski, PESEL 44051401359, tel. 600 100 200, e-mail jan.kowalski@example.com.')
   await page.getByRole('button', { name: 'Wykryj dane do ukrycia' }).click()
   await expect(page.getByRole('heading', { name: 'Anonimizacja', exact: true })).toBeVisible({ timeout: 30_000 })
+  const walkthrough = page.getByRole('dialog', { name: 'Kliknij szary fragment, aby go ukryć' })
+  await expect(walkthrough).toBeVisible()
+  await walkthrough.getByRole('button', { name: 'Zamknij przewodnik' }).click()
+  await expect(walkthrough).toBeHidden()
   await page.getByRole('button', { name: 'Ukryj wszystkie sugestie' }).click()
 
   const download = page.waitForEvent('download')

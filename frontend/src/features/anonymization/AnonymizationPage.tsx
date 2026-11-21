@@ -29,11 +29,54 @@ import { RedactionPanel } from '@/components/redaction/RedactionPanel'
 import { addManual, addPhrase, approveAllSuggested, countByStatus, withStatus } from '@/components/redaction/redactions'
 import { notifyError } from '@/components/ui/toaster'
 import { plural } from '@/lib/dates'
+import { AnonymizationWalkthrough } from './AnonymizationWalkthrough'
 import { exportAnonymized, useAnalyzeDocument } from './api'
 
 const accept = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain']
 
 type Format = 'docx' | 'txt'
+
+const howItWorks = [
+  { title: 'Dodaj dokument', text: 'Prześlij plik PDF, DOCX lub TXT albo wklej tekst.' },
+  { title: 'Zdecyduj, co ukryć', text: 'Kliknij dane zaznaczone przez asystenta albo zaznacz myszą dowolny inny fragment.' },
+  { title: 'Pobierz wynik', text: 'Pobierz dokument z ukrytymi danymi jako plik Word lub tekstowy.' },
+]
+
+function HowItWorks() {
+  return (
+    <Box as="section" aria-labelledby="how-it-works-heading">
+      <Heading as="h2" id="how-it-works-heading" size="sm" mb="3">
+        Jak to działa
+      </Heading>
+      <Grid as="ol" templateColumns={{ base: '1fr', md: 'repeat(3, minmax(0, 1fr))' }} gap="3" m="0" p="0" listStyleType="none">
+        {howItWorks.map((step, index) => (
+          <Flex as="li" key={step.title} gap="3" align="flex-start" bg="bg.panel" borderWidth="1px" borderColor="border" borderRadius="md" p="3">
+            <Flex
+              flexShrink="0"
+              boxSize="7"
+              align="center"
+              justify="center"
+              borderRadius="full"
+              bg="brand.solid"
+              color="brand.contrast"
+              fontWeight="bold"
+              fontSize="sm"
+              aria-hidden
+            >
+              {index + 1}
+            </Flex>
+            <Box>
+              <Text fontWeight="semibold">{step.title}</Text>
+              <Text fontSize="sm" color="fg.muted">
+                {step.text}
+              </Text>
+            </Box>
+          </Flex>
+        ))}
+      </Grid>
+    </Box>
+  )
+}
 
 function SourceForm({ busy, error, onAnalyze }: { busy: boolean; error: string | null; onAnalyze: (source: File | string) => void }) {
   const [text, setText] = useState('')
@@ -41,6 +84,7 @@ function SourceForm({ busy, error, onAnalyze }: { busy: boolean; error: string |
   const message = rejection ?? error
   return (
     <Stack gap="5" maxW="4xl">
+      <HowItWorks />
       {message && (
         <Alert.Root status="error" variant="outline" role="alert">
           <Alert.Indicator />
@@ -158,12 +202,13 @@ export function AnonymizationPage() {
         actions={
           result && (
             <>
+              {result.text && <AnonymizationWalkthrough onStart={() => setMode('review')} />}
               <Button variant="ghost" onClick={reset}>
                 <RotateCcw size={16} aria-hidden /> Nowy dokument
               </Button>
               <Menu.Root positioning={{ placement: 'bottom-end' }}>
                 <Menu.Trigger asChild>
-                  <Button>
+                  <Button data-walkthrough="download">
                     <Download size={16} aria-hidden /> Pobierz zanonimizowany <ChevronDown size={14} aria-hidden />
                   </Button>
                 </Menu.Trigger>
@@ -209,7 +254,13 @@ export function AnonymizationPage() {
               Wykryto {redactions.length} {plural(redactions.length, 'fragment', 'fragmenty', 'fragmentów')}
               {result.aiUsed ? ' (reguły i analiza AI)' : ' (reguły)'}
             </Text>
-            <SegmentGroup.Root value={mode} onValueChange={(e) => setMode(e.value as DocumentMode)} aria-label="Widok dokumentu" ms={{ md: 'auto' }}>
+            <SegmentGroup.Root
+              value={mode}
+              onValueChange={(e) => setMode(e.value as DocumentMode)}
+              aria-label="Widok dokumentu"
+              ms={{ md: 'auto' }}
+              data-walkthrough="view"
+            >
               <SegmentGroup.Indicator />
               <SegmentGroup.Item value="review">
                 <SegmentGroup.ItemText display="inline-flex" alignItems="center" gap="1.5">
@@ -226,18 +277,29 @@ export function AnonymizationPage() {
             </SegmentGroup.Root>
           </Flex>
           <Grid templateColumns={{ base: '1fr', xl: mode === 'review' ? 'minmax(0, 1fr) 360px' : '1fr' }} gap="6" alignItems="start">
-            <RedactedDocument
-              label="Treść dokumentu"
-              content={result.text}
-              redactions={redactions}
-              mode={mode}
-              onToggle={(index) =>
-                setRedactions(withStatus(redactions, index, redactions[index].status === 'Approved' ? 'Suggested' : 'Approved'))
-              }
-              onSelectRange={(start, end) => setRedactions(addManual(redactions, result.text, start, end))}
-            />
+            <Box minW="0" data-walkthrough="document">
+              <RedactedDocument
+                label="Treść dokumentu"
+                content={result.text}
+                redactions={redactions}
+                mode={mode}
+                onToggle={(index) =>
+                  setRedactions(withStatus(redactions, index, redactions[index].status === 'Approved' ? 'Suggested' : 'Approved'))
+                }
+                onSelectRange={(start, end) => setRedactions(addManual(redactions, result.text, start, end))}
+              />
+            </Box>
             {mode === 'review' && (
-              <Box position={{ xl: 'sticky' }} top={{ xl: '20' }} bg="bg.subtle" borderWidth="1px" borderColor="border" borderRadius="md" p="4">
+              <Box
+                position={{ xl: 'sticky' }}
+                top={{ xl: '20' }}
+                bg="bg.subtle"
+                borderWidth="1px"
+                borderColor="border"
+                borderRadius="md"
+                p="4"
+                data-walkthrough="panel"
+              >
                 <RedactionPanel
                   redactions={redactions}
                   detecting={false}

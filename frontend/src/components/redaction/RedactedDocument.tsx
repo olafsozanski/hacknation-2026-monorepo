@@ -1,5 +1,5 @@
-import { Box, Button, chakra } from '@chakra-ui/react'
-import { EyeOff } from 'lucide-react'
+import { Box, Button, Flex, Text, chakra } from '@chakra-ui/react'
+import { EyeOff, MousePointerClick } from 'lucide-react'
 import { useRef, useState, type MouseEvent } from 'react'
 import type { Redaction } from '@/api/types'
 import { redactionCategoryLabels } from '@/lib/labels'
@@ -36,6 +36,34 @@ function TextPieces({ text, start }: { text: string; start: number }) {
   )
 }
 
+function ReviewHint() {
+  return (
+    <Flex
+      data-walkthrough="hint"
+      maxW="820px"
+      mx="auto"
+      mb="3"
+      gap="2"
+      align="flex-start"
+      fontSize="sm"
+      bg="brand.subtle"
+      borderWidth="1px"
+      borderColor="brand.muted"
+      borderRadius="md"
+      px="3"
+      py="2"
+    >
+      <Box flexShrink="0" mt="0.5" color="brand.fg">
+        <MousePointerClick size={16} aria-hidden />
+      </Box>
+      <Text>
+        <strong>Kliknij szary fragment</strong>, aby go ukryć. Aby ukryć inny tekst, <strong>zaznacz go myszą</strong> i wybierz
+        „Ukryj zaznaczony fragment”.
+      </Text>
+    </Flex>
+  )
+}
+
 export function RedactedDocument({ content, redactions, mode, label, onToggle, onSelectRange }: RedactedDocumentProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [selection, setSelection] = useState<{ start: number; end: number; top: number; left: number } | null>(null)
@@ -63,95 +91,98 @@ export function RedactedDocument({ content, redactions, mode, label, onToggle, o
   const segments = buildSegments(content, redactions)
 
   return (
-    <Box position="relative" ref={containerRef} onMouseUp={captureSelection}>
-      <Box
-        as="article"
-        aria-label={label}
-        bg="bg.panel"
-        borderWidth="1px"
-        borderColor="border"
-        borderRadius="md"
-        boxShadow="sm"
-        px={{ base: 5, md: 12 }}
-        py={{ base: 6, md: 12 }}
-        maxW="820px"
-        mx="auto"
-        whiteSpace="pre-wrap"
-        lineHeight="1.8"
-        fontSize="md"
-        color="fg"
-        wordBreak="break-word"
-      >
-        {segments.map((segment) => {
-          if (segment.kind === 'text') return <TextPieces key={`t${segment.start}`} text={segment.text} start={segment.start} />
-          const { redaction, index } = segment
-          const category = redactionCategoryLabels[redaction.category]
-
-          if (mode === 'preview') {
-            return redaction.status === 'Approved' ? (
-              <chakra.span key={`r${segment.start}`} bg="fg" color="bg" px="1" borderRadius="xs" fontSize="sm">
-                [dane zanonimizowane]
-              </chakra.span>
-            ) : (
-              <TextPieces key={`r${segment.start}`} text={segment.text} start={segment.start} />
-            )
-          }
-
-          if (redaction.status === 'Rejected') {
-            return <TextPieces key={`r${segment.start}`} text={segment.text} start={segment.start} />
-          }
-
-          const approved = redaction.status === 'Approved'
-          return (
-            <Mark
-              key={`r${segment.start}`}
-              type="button"
-              id={`redaction-${index}`}
-              data-offset={segment.start}
-              aria-pressed={approved}
-              aria-label={`${category}: ${segment.text}. ${approved ? 'Zostanie ukryte. Naciśnij, aby cofnąć.' : 'Do weryfikacji. Naciśnij, aby ukryć.'}`}
-              title={`${category} — ${approved ? 'zostanie ukryte (kliknij, aby cofnąć)' : 'kliknij, aby ukryć'}`}
-              onClick={() => onToggle(index)}
-              display="inline"
-              font="inherit"
-              lineHeight="inherit"
-              whiteSpace="pre-wrap"
-              textAlign="start"
-              cursor="pointer"
-              px="0.5"
-              mx="-0.5"
-              borderRadius="xs"
-              bg={approved ? 'fg' : 'bg.emphasized'}
-              color={approved ? 'bg' : 'fg'}
-              borderBottomWidth={approved ? 0 : '2px'}
-              borderBottomStyle="dashed"
-              borderBottomColor="fg.muted"
-              boxDecorationBreak="clone"
-              _hover={{ outline: '2px solid', outlineColor: 'focus.ring' }}
-            >
-              {segment.text}
-            </Mark>
-          )
-        })}
-      </Box>
-      {selection && (
-        <Button
-          data-selection-action
-          size="sm"
-          position="absolute"
-          top={`${selection.top}px`}
-          left={`${selection.left}px`}
-          zIndex="popover"
-          boxShadow="md"
-          onClick={() => {
-            onSelectRange(selection.start, selection.end)
-            setSelection(null)
-            window.getSelection()?.removeAllRanges()
-          }}
+    <Box minW="0">
+      {mode === 'review' && <ReviewHint />}
+      <Box position="relative" ref={containerRef} onMouseUp={captureSelection}>
+        <Box
+          as="article"
+          aria-label={label}
+          bg="bg.panel"
+          borderWidth="1px"
+          borderColor="border"
+          borderRadius="md"
+          boxShadow="sm"
+          px={{ base: 5, md: 12 }}
+          py={{ base: 6, md: 12 }}
+          maxW="820px"
+          mx="auto"
+          whiteSpace="pre-wrap"
+          lineHeight="1.8"
+          fontSize="md"
+          color="fg"
+          wordBreak="break-word"
         >
-          <EyeOff size={14} aria-hidden /> Ukryj zaznaczony fragment
-        </Button>
-      )}
+          {segments.map((segment) => {
+            if (segment.kind === 'text') return <TextPieces key={`t${segment.start}`} text={segment.text} start={segment.start} />
+            const { redaction, index } = segment
+            const category = redactionCategoryLabels[redaction.category]
+
+            if (mode === 'preview') {
+              return redaction.status === 'Approved' ? (
+                <chakra.span key={`r${segment.start}`} bg="fg" color="bg" px="1" borderRadius="xs" fontSize="sm">
+                  [dane zanonimizowane]
+                </chakra.span>
+              ) : (
+                <TextPieces key={`r${segment.start}`} text={segment.text} start={segment.start} />
+              )
+            }
+
+            if (redaction.status === 'Rejected') {
+              return <TextPieces key={`r${segment.start}`} text={segment.text} start={segment.start} />
+            }
+
+            const approved = redaction.status === 'Approved'
+            return (
+              <Mark
+                key={`r${segment.start}`}
+                type="button"
+                id={`redaction-${index}`}
+                data-offset={segment.start}
+                aria-pressed={approved}
+                aria-label={`${category}: ${segment.text}. ${approved ? 'Zostanie ukryte. Naciśnij, aby cofnąć.' : 'Do weryfikacji. Naciśnij, aby ukryć.'}`}
+                title={`${category} — ${approved ? 'zostanie ukryte (kliknij, aby cofnąć)' : 'kliknij, aby ukryć'}`}
+                onClick={() => onToggle(index)}
+                display="inline"
+                font="inherit"
+                lineHeight="inherit"
+                whiteSpace="pre-wrap"
+                textAlign="start"
+                cursor="pointer"
+                px="0.5"
+                mx="-0.5"
+                borderRadius="xs"
+                bg={approved ? 'fg' : 'bg.emphasized'}
+                color={approved ? 'bg' : 'fg'}
+                borderBottomWidth={approved ? 0 : '2px'}
+                borderBottomStyle="dashed"
+                borderBottomColor="fg.muted"
+                boxDecorationBreak="clone"
+                _hover={{ outline: '2px solid', outlineColor: 'focus.ring' }}
+              >
+                {segment.text}
+              </Mark>
+            )
+          })}
+        </Box>
+        {selection && (
+          <Button
+            data-selection-action
+            size="sm"
+            position="absolute"
+            top={`${selection.top}px`}
+            left={`${selection.left}px`}
+            zIndex="popover"
+            boxShadow="md"
+            onClick={() => {
+              onSelectRange(selection.start, selection.end)
+              setSelection(null)
+              window.getSelection()?.removeAllRanges()
+            }}
+          >
+            <EyeOff size={14} aria-hidden /> Ukryj zaznaczony fragment
+          </Button>
+        )}
+      </Box>
     </Box>
   )
 }
