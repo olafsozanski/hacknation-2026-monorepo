@@ -1,6 +1,5 @@
 using ClerkAssistant.Api.Domain;
 using ClerkAssistant.Api.Features.Anonymization;
-using ClerkAssistant.Api.Infrastructure.Ai;
 using ClerkAssistant.Api.Infrastructure.Common;
 using ClerkAssistant.Api.Infrastructure.Persistence;
 using ClerkAssistant.Api.Infrastructure.Security;
@@ -12,9 +11,7 @@ namespace ClerkAssistant.Api.Features.Drafts;
 public static class DraftsEndpoints
 {
     public static IServiceCollection AddDraftsFeature(this IServiceCollection services) =>
-        services
-            .AddAnonymization()
-            .AddScoped<DraftComposer>();
+        services.AddScoped<DraftComposer>();
 
     public static void MapDraftsEndpoints(this RouteGroupBuilder api)
     {
@@ -58,15 +55,9 @@ public static class DraftsEndpoints
         audit.Record("draft.generated", nameof(InfoRequest), id, composition.AiUsed ? "AI" : "szablon");
         await db.SaveChangesAsync(ct);
 
-        var warnings = composition.Warnings.ToList();
-        if (detection.AiFailed)
-        {
-            warnings.Add(AiGateway.FallbackWarning);
-        }
-
         return TypedResults.Ok(new GenerateDraftResult(
             await ToDtoAsync(db, draft, ct),
-            warnings.Distinct().ToArray(),
+            composition.Warnings.Concat(detection.Warnings).Distinct().ToArray(),
             composition.AiUsed || detection.AiUsed));
     }
 
@@ -119,19 +110,18 @@ public static class DraftsEndpoints
         var detection = await detector.DetectAsync(request.Content, known, ct);
         return TypedResults.Ok(new DetectRedactionsResult(
             RedactionSet.AddSuggestions(placed, detection.Suggestions).ToArray(),
-            detection.AiFailed ? [AiGateway.FallbackWarning] : [],
+            detection.Warnings,
             detection.AiUsed));
     }
 
     private static async Task<Results<FileContentHttpResult, NotFound, ValidationProblem>> Export(
         Guid id, string? format, AppDbContext db, AuditLog audit, CancellationToken ct)
     {
-        var extension = string.IsNullOrWhiteSpace(format) ? "docx" : format.Trim().ToLowerInvariant();
-        if (extension is not ("docx" or "txt"))
+        if (!DraftExport.TryParseFormat(format, out var extension))
         {
             return TypedResults.ValidationProblem(new Dictionary<string, string[]>
             {
-                ["format"] = ["Nieobsługiwany format pliku. Dozwolone wartości: docx, txt."],
+                ["format"] = [DraftExport.UnsupportedFormatMessage],
             });
         }
 
@@ -146,14 +136,14 @@ public static class DraftsEndpoints
         }
 
         var text = DraftExport.PrepareText(draft.Content, draft.Redactions);
-        var bytes = extension == "docx"
+        var bytes = extension == DraftExport.Docx
             ? DraftExport.ToDocx(text, $"Odpowiedź na wniosek {caseNumber}")
             : DraftExport.ToTxt(text);
         audit.Record("draft.exported", nameof(InfoRequest), id, extension);
         await db.SaveChangesAsync(ct);
         return TypedResults.File(
             bytes,
-            extension == "docx" ? DraftExport.DocxContentType : DraftExport.TxtContentType,
+            DraftExport.ContentType(extension),
             DraftExport.FileName(caseNumber, extension));
     }
 

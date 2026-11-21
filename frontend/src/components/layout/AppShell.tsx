@@ -7,12 +7,10 @@ import { SideNav } from './SideNav'
 
 function useFocusHeadingOnNavigation() {
   const { pathname } = useLocation()
-  const first = useRef(true)
+  const previous = useRef(pathname)
   useEffect(() => {
-    if (first.current) {
-      first.current = false
-      return
-    }
+    if (previous.current === pathname) return
+    previous.current = pathname
     const timer = window.setTimeout(() => {
       const heading = document.querySelector<HTMLElement>('#main-content h1')
       ;(heading ?? document.getElementById('main-content'))?.focus()
@@ -29,6 +27,12 @@ export function AppShell() {
     <Flex direction="column" minH="100dvh">
       <Link
         href="#main-content"
+        onClick={(event) => {
+          event.preventDefault()
+          const main = document.getElementById('main-content')
+          main?.focus()
+          main?.scrollIntoView()
+        }}
         position="absolute"
         left="4"
         top="-20"

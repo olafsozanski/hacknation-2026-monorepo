@@ -47,6 +47,10 @@ public class AiFeaturesTests(AiApiFactory factory) : IClassFixture<AiApiFactory>
             Status = RequestStatus.ResponseSent,
             Departments = [new Assignment("BKB", Today.AddMonths(-10), Today.AddMonths(-10).AddDays(6))],
         });
+        var archived = await factory.AddRequestAsync(new NewRequest(
+            "Koncert sylwestrowy — honoraria artystów",
+            "Wnoszę o informację, ile wyniosły honoraria artystów koncertu sylwestrowego i łączny koszt organizacji Sylwestra Miejskiego.",
+            Today.AddMonths(-15)));
         var client = await factory.ClientAsync();
 
         var response = await client.PostAsJsonAsync("/api/intake/text", new IntakeTextRequest(SylwesterRequest), ApiClient.Json, Ct);
@@ -70,6 +74,7 @@ public class AiFeaturesTests(AiApiFactory factory) : IClassFixture<AiApiFactory>
         var similar = Assert.Single(result.SimilarCases, h => h.Id == past);
         Assert.Equal("Koszty Sylwestra Miejskiego 2024", similar.Title);
         Assert.Equal(SearchHitKind.Request, similar.Kind);
+        Assert.Contains(result.SimilarCases, h => h.Id == archived);
         Assert.Equal(["BKB"], similar.DepartmentSymbols);
         Assert.InRange(similar.Score, 0.01, 1);
 
@@ -222,21 +227,23 @@ public class AiFeaturesTests(AiApiFactory factory) : IClassFixture<AiApiFactory>
     }
 
     [Fact]
-    public async Task Similar_returns_recent_cases_excluding_the_request_itself()
+    public async Task Similar_searches_the_whole_archive_preferring_recent_cases()
     {
         var target = await factory.AddRequestAsync(new NewRequest(
             "Wycinka drzew w parku Kochanowskiego", "Ile drzew wycięto w parku Kochanowskiego i dlaczego?", Today));
         var recent = await factory.AddRequestAsync(new NewRequest(
             "Drzewa w parku Kochanowskiego", "Proszę o informację o wycince drzew w parku Kochanowskiego.", Today.AddMonths(-3)));
         var old = await factory.AddRequestAsync(new NewRequest(
-            "Wycinka drzew w parku Kochanowskiego 2024", "Wycinka drzew w parku Kochanowskiego.", Today.AddMonths(-14)));
+            "Drzewa w parku Kochanowskiego", "Proszę o informację o wycince drzew w parku Kochanowskiego.", Today.AddMonths(-15)));
         var client = await factory.ClientAsync();
 
         var hits = await client.GetFromJsonAsync<SearchHit[]>($"/api/requests/{target}/similar", ApiClient.Json, Ct);
         var missing = await client.GetAsync($"/api/requests/{Guid.NewGuid()}/similar", Ct);
 
-        Assert.Contains(hits!, h => h.Id == recent);
-        Assert.DoesNotContain(hits!, h => h.Id == target || h.Id == old);
+        var recentHit = Assert.Single(hits!, h => h.Id == recent);
+        var oldHit = Assert.Single(hits!, h => h.Id == old);
+        Assert.True(recentHit.Score > oldHit.Score);
+        Assert.DoesNotContain(hits!, h => h.Id == target);
         Assert.True(hits!.Length <= SearchEndpoints.SimilarCasesLimit);
         Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
     }
@@ -268,7 +275,8 @@ public class AiFeaturesTests(AiApiFactory factory) : IClassFixture<AiApiFactory>
             "Koszty Sylwestra Miejskiego 2025", SylwesterRequest, new DateOnly(2026, 11, 16))
         {
             RequesterName = "Jan Kowalski",
-            RequesterContact = "jan.kowalski@example.com",
+            RequesterContact = "ul. Polna 3, 86-300 Grudziądz",
+            ReplyChannel = ReplyChannel.Post,
         });
         await factory.AddDepartmentReplyAsync(id, "BKB",
             "Łączny koszt koncertu wyniósł 450 000 zł brutto.\nHonoraria artystów: 210 000 zł.\nOsoba do kontaktu: tel. 501 234 567.");
@@ -283,26 +291,38 @@ public class AiFeaturesTests(AiApiFactory factory) : IClassFixture<AiApiFactory>
         Assert.False(result.AiUsed);
         Assert.False(draft.GeneratedByAi);
         Assert.Equal("Administrator", draft.UpdatedBy);
-        Assert.StartsWith("Bydgoszcz, dnia 18 listopada 2026 r.\n\nZnak sprawy: BKS.IV.1431.", draft.Content);
-        Assert.Contains("\n\nJan Kowalski\njan.kowalski@example.com\n\n", draft.Content);
-        Assert.Contains("Dotyczy: wniosku o udostępnienie informacji publicznej z dnia 16 listopada 2026 r.", draft.Content);
+        Assert.StartsWith(
+            "URZĄD MIASTA BYDGOSZCZY\nBiuro Komunikacji Społecznej\n\nBydgoszcz, dnia 18 listopada 2026 r.\n\nBKS.IV.1431.",
+            draft.Content);
+        Assert.Contains("\n\nJan Kowalski\nul. Polna 3\n86-300 Grudziądz\n\nSzanowny Panie,\n\n", draft.Content);
+        Assert.Contains(
+            "w odpowiedzi na wystosowany przez Pana wniosek o udostępnienie informacji publicznej dotyczący: „Koszty Sylwestra Miejskiego 2025”, " +
+            "na podstawie informacji przygotowanych przez komórkę merytoryczną, tj. Biuro Kultury Bydgoskiej Urzędu Miasta Bydgoszczy, " +
+            "uprzejmie informuję, że [DO UZUPEŁNIENIA:",
+            draft.Content);
         Assert.Contains("Informacja przekazana przez: Biuro Kultury Bydgoskiej", draft.Content);
         Assert.Contains("Łączny koszt koncertu wyniósł 450 000 zł brutto.", draft.Content);
-        Assert.Contains("[DO UZUPEŁNIENIA:", draft.Content);
-        Assert.EndsWith("Z poważaniem\n\n[podpis osoby upoważnionej]", draft.Content);
+        Assert.DoesNotContain("Dotyczy:", draft.Content);
+        Assert.DoesNotContain("[podpis osoby upoważnionej]", draft.Content);
+        Assert.EndsWith(
+            "Łączę wyrazy szacunku,\nBiuro Komunikacji Społecznej\nUrząd Miasta Bydgoszczy\n\n" +
+            "ul. Jezuicka 1, 85-102 Bydgoszcz\ntel. (52) 58 58 365, fax (52) 58 58 623\ne-mail: bks@um.bydgoszcz.pl, www.bydgoszcz.pl",
+            draft.Content);
         Assert.Contains(draft.Redactions, r => r.Category == RedactionCategory.PersonName && r.Text == "Jan Kowalski");
-        Assert.Contains(draft.Redactions, r => r.Category == RedactionCategory.Email);
+        Assert.Contains(draft.Redactions, r => r.Category == RedactionCategory.Address && r.Text == "ul. Polna 3\n86-300 Grudziądz");
         Assert.Contains(draft.Redactions, r => r.Category == RedactionCategory.Phone && r.Text == "501 234 567");
+        var footer = draft.Content.LastIndexOf("Łączę wyrazy szacunku,", StringComparison.Ordinal);
+        Assert.DoesNotContain(draft.Redactions, r => r.Start >= footer);
         Assert.All(draft.Redactions, r => Assert.Equal(RedactionStatus.Suggested, r.Status));
         Assert.All(draft.Redactions, r => Assert.Equal(r.Text, draft.Content.Substring(r.Start, r.Length)));
 
         var fetched = await client.GetFromJsonAsync<DraftDto>($"/api/requests/{id}/draft", ApiClient.Json, Ct);
         Assert.Equal(draft.Version, fetched!.Version);
 
-        var email = draft.Redactions.First(r => r.Category == RedactionCategory.Email);
+        var address = draft.Redactions.First(r => r.Category == RedactionCategory.Address);
         var invalid = new Redaction(0, 9, "Nieistnie", RedactionCategory.Other, RedactionStatus.Approved, RedactionSource.Manual);
         var saved = await client.PutAsJsonAsync($"/api/requests/{id}/draft",
-            new SaveDraftRequest(draft.Content, [email with { Status = RedactionStatus.Approved }, invalid], draft.Version),
+            new SaveDraftRequest(draft.Content, [address with { Status = RedactionStatus.Approved }, invalid], draft.Version),
             ApiClient.Json, Ct);
         saved.EnsureSuccessStatusCode();
         var savedDraft = (await saved.Content.ReadFromJsonAsync<DraftDto>(ApiClient.Json, Ct))!;
@@ -329,8 +349,8 @@ public class AiFeaturesTests(AiApiFactory factory) : IClassFixture<AiApiFactory>
         txt.EnsureSuccessStatusCode();
         var text = await txt.Content.ReadAsStringAsync(Ct);
         Assert.Contains("[dane zanonimizowane]", text);
-        Assert.DoesNotContain("jan.kowalski@example.com", text);
-        Assert.EndsWith(DraftExport.AnonymizationNotice, text);
+        Assert.DoesNotContain("ul. Polna 3", text);
+        Assert.Contains(DraftExport.AnonymizationNotice + "\n\nŁączę wyrazy szacunku,", text);
         Assert.Matches(@"^BKS-IV-1431-\d+-2026-odpowiedz\.txt$", txt.Content.Headers.ContentDisposition!.FileNameStar);
         Assert.StartsWith("text/plain", txt.Content.Headers.ContentType!.ToString());
 
@@ -366,7 +386,7 @@ public class AiFeaturesTests(AiApiFactory factory) : IClassFixture<AiApiFactory>
         var result = (await response.Content.ReadFromJsonAsync<GenerateDraftResult>(ApiClient.Json, Ct))!;
         Assert.Contains(DraftComposer.NoRepliesWarning, result.Warnings);
         Assert.DoesNotContain(AiGateway.FallbackWarning, result.Warnings);
-        Assert.Contains("\n\nWnioskodawca\n\n", result.Draft.Content);
+        Assert.Contains("\n\nSzanowni Państwo,\n\nw odpowiedzi na wystosowany przez Państwa wniosek", result.Draft.Content);
         Assert.Contains("[DO UZUPEŁNIENIA: treść odpowiedzi na wniosek]", result.Draft.Content);
         Assert.Equal(RequestStatus.NoAction, await factory.QueryAsync(db =>
             db.Requests.Where(r => r.Id == id).Select(r => r.Status).SingleAsync(Ct)));

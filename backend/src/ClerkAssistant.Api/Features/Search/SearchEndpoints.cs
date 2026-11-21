@@ -31,7 +31,7 @@ public static class SearchEndpoints
 
     public static SearchRequest SimilarCases(string text, DateOnly today, int limit) => new(text)
     {
-        RequestsReceivedSince = today.AddMonths(-12),
+        PreferReceivedSince = today.AddMonths(-12),
         KnowledgeKinds = [KnowledgeKind.ArchivedResponse],
         Limit = limit,
     };

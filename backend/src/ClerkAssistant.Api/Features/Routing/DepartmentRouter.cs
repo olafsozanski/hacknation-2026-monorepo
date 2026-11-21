@@ -17,7 +17,7 @@ internal sealed record RoutingAnswer(List<RoutingChoice>? Departments);
 internal sealed record RoutingChoice(string? Symbol, string? Reason, double Confidence);
 
 public sealed class DepartmentRouter(
-    AppDbContext db, HybridSearch search, AiGateway ai, IOptions<OrganizationOptions> organization)
+    AppDbContext db, HybridSearch search, AiGateway ai, IOptions<OrganizationOptions> organization, AppClock clock)
 {
     public const int MaxSuggestions = 5;
     public const int MaxReasonLength = 200;
@@ -40,6 +40,7 @@ public sealed class DepartmentRouter(
         {
             IncludeKnowledge = false,
             ExcludeRequestId = excludeRequestId,
+            PreferReceivedSince = clock.Today.AddMonths(-12),
             Limit = SimilarRequestsConsidered,
             Embedding = embedding,
         }, ct);

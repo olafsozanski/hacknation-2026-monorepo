@@ -13,6 +13,8 @@ public static class SecurityExtensions
 {
     public const string LoginRateLimit = "login";
     public const string AiRateLimit = "ai";
+    public const string UploadRateLimit = "uploads";
+    public const string SearchRateLimit = "search";
     public const string AntiforgeryHeader = "X-XSRF-TOKEN";
     public const long MaxUploadBytes = 20 * 1024 * 1024;
 
@@ -102,13 +104,18 @@ public static class SecurityExtensions
             o.AddPolicy(LoginRateLimit, ctx => RateLimitPartition.GetFixedWindowLimiter(
                 ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                 _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(5) }));
-            o.AddPolicy(AiRateLimit, ctx => RateLimitPartition.GetFixedWindowLimiter(
-                ctx.User.Identity?.Name ?? ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1) }));
+            o.AddPolicy(AiRateLimit, ctx => PerUser(ctx, 30));
+            o.AddPolicy(UploadRateLimit, ctx => PerUser(ctx, 30));
+            o.AddPolicy(SearchRateLimit, ctx => PerUser(ctx, 120));
         });
 
         return builder;
     }
+
+    private static RateLimitPartition<string> PerUser(HttpContext ctx, int permitsPerMinute) =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            ctx.User.Identity?.Name ?? ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = permitsPerMinute, Window = TimeSpan.FromMinutes(1) });
 
     public static WebApplication UseSecurityHeaders(this WebApplication app)
     {

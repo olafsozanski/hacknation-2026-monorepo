@@ -68,9 +68,10 @@ export function RequestTable({ items, caption }: { items: RequestListItem[]; cap
             <Table.ColumnHeader>Wnioskodawca</Table.ColumnHeader>
             <Table.ColumnHeader>Przedmiot zapytania</Table.ColumnHeader>
             <SortHeader label="Data wpływu" sortKey="receivedOn" sort={sort} onSort={toggleSort} />
-            <SortHeader label="Termin odpowiedzi" sortKey="effectiveDueOn" sort={sort} onSort={toggleSort} />
-            <Table.ColumnHeader whiteSpace="nowrap">Data odpowiedzi</Table.ColumnHeader>
-            <Table.ColumnHeader whiteSpace="nowrap">Pozostało dni</Table.ColumnHeader>
+            <SortHeader label="Termin / pozostało dni" sortKey="effectiveDueOn" sort={sort} onSort={toggleSort} />
+            <Table.ColumnHeader whiteSpace="nowrap" hideBelow="2xl">
+              Data odpowiedzi
+            </Table.ColumnHeader>
             <SortHeader label="Status" sortKey="status" sort={sort} onSort={toggleSort} />
             <Table.ColumnHeader textAlign="center">Prowadzi</Table.ColumnHeader>
           </Table.Row>
@@ -101,12 +102,12 @@ export function RequestTable({ items, caption }: { items: RequestListItem[]; cap
                     <RouterLink to={`/wnioski/${item.id}`}>{item.caseNumber}</RouterLink>
                   </Link>
                 </Table.Cell>
-                <Table.Cell maxW="44">
+                <Table.Cell maxW="36">
                   <Text lineClamp={2} title={item.requesterName ?? undefined}>
                     {item.requesterName ?? '—'}
                   </Text>
                 </Table.Cell>
-                <Table.Cell minW="56">
+                <Table.Cell minW="52">
                   <Text lineClamp={2} title={item.subject}>
                     {item.subject}
                   </Text>
@@ -119,22 +120,27 @@ export function RequestTable({ items, caption }: { items: RequestListItem[]; cap
                 <Table.Cell whiteSpace="nowrap" fontVariantNumeric="tabular-nums">
                   {formatDate(item.receivedOn)}
                 </Table.Cell>
-                <Table.Cell whiteSpace="nowrap" fontVariantNumeric="tabular-nums" fontWeight="semibold">
-                  {formatDate(item.effectiveDueOn)}
+                <Table.Cell whiteSpace="nowrap" fontVariantNumeric="tabular-nums">
+                  <Text fontWeight="semibold">{formatDate(item.effectiveDueOn)}</Text>
                   {item.extensionDays && (
-                    <Text fontSize="xs" color="fg.muted" fontWeight="normal">
+                    <Text fontSize="xs" color="fg.muted">
                       ustawowo {formatDate(item.dueOn)}
                     </Text>
                   )}
+                  <Box mt="1">
+                    <DeadlineBadge urgency={item.urgency} daysLeft={item.daysLeft} />
+                  </Box>
                 </Table.Cell>
-                <Table.Cell whiteSpace="nowrap" fontVariantNumeric="tabular-nums">
+                <Table.Cell whiteSpace="nowrap" fontVariantNumeric="tabular-nums" hideBelow="2xl">
                   {item.respondedOn ? formatDate(item.respondedOn) : <Text as="span" color="fg.subtle">—</Text>}
                 </Table.Cell>
                 <Table.Cell>
-                  <DeadlineBadge urgency={item.urgency} daysLeft={item.daysLeft} />
-                </Table.Cell>
-                <Table.Cell>
                   <StatusBadge status={item.status} extensionDays={item.extensionDays} extensionKind={item.extensionKind} short />
+                  {item.respondedOn && (
+                    <Text hideFrom="2xl" fontSize="xs" color="fg.muted" mt="1" whiteSpace="nowrap">
+                      Odpowiedź: {formatDate(item.respondedOn)}
+                    </Text>
+                  )}
                 </Table.Cell>
                 <Table.Cell textAlign="center">
                   {item.assignee ? (
