@@ -81,6 +81,9 @@ for the reference implementation:
     No colour palettes on buttons except `red` for destructive actions.
 - Dates: always `DateInput` (`src/components/common/DateInput.tsx`, Chakra DatePicker, Polish locale, `dd.mm.rrrr`),
   never `<input type="date">`; pass `portalled={false}` inside dialogs.
+- Forms never use native browser validation: `noValidate` on the `<form>` (dialogs use `DialogForm`), rules in the
+  submit handler with `collectErrors`/`useFieldErrors` from `src/lib/validation.ts`, then `focusFirstInvalid`.
+  Show messages with `FieldErrorText` (icon + text) inside a `Field.Root invalid`; don't disable submit buttons to validate.
 - Segmented controls (`SegmentGroup`), inputs, selects and checkboxes get their look from the theme
   (`src/theme/index.ts`) — don't restyle them per screen.
 - Accessibility is a requirement (WCAG 2.1 AA): labelled form fields, visible focus, keyboard access,

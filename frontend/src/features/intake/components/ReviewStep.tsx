@@ -24,10 +24,12 @@ import { Panel } from '@/components/common/Panel'
 import { DepartmentSuggestionList } from '@/components/domain/DepartmentSuggestionList'
 import { RequestFormFields, type RequestFormField, type RequestFormValues } from '@/components/domain/RequestFormFields'
 import { SimilarCasesList } from '@/components/domain/SimilarCasesList'
+import { validateRequestForm } from '@/components/domain/validateRequestForm'
 import { notifySuccess } from '@/components/ui/toaster'
 import { useCurrentUser } from '@/features/auth/session'
 import { useDepartments, useUsers } from '@/features/platform/api'
 import { formatDate, todayIso } from '@/lib/dates'
+import { focusFirstInvalid, hasErrors, useFieldErrors } from '@/lib/validation'
 import { deadlinePreviewQuery, useCreateRequest } from '../api'
 
 type ReviewStepProps = {
@@ -60,7 +62,7 @@ export function ReviewStep({ intake, onRestart }: ReviewStepProps) {
   const [content, setContent] = useState(intake?.text ?? '')
   const [departmentIds, setDepartmentIds] = useState<string[]>([])
   const [dueTouched, setDueTouched] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [errors, setErrors, clearErrors] = useFieldErrors()
 
   const preview = useQuery(deadlinePreviewQuery(values.receivedOn))
   const dueOn = dueTouched ? values.dueOn : (preview.data?.dueOn ?? values.dueOn)
@@ -79,15 +81,18 @@ export function ReviewStep({ intake, onRestart }: ReviewStepProps) {
   const change = (changes: Partial<RequestFormValues>) => {
     if ('dueOn' in changes) setDueTouched(true)
     setValues((v) => ({ ...v, ...changes }))
+    clearErrors(...Object.keys(changes))
   }
 
   const toggleDepartment = (id: string, checked: boolean) =>
     setDepartmentIds((ids) => (checked ? [...new Set([...ids, id])] : ids.filter((x) => x !== id)))
 
-  const submit = (event: FormEvent) => {
+  const submit = (event: FormEvent<HTMLElement>) => {
     event.preventDefault()
-    if (!values.subject.trim()) {
-      setErrors({ subject: 'Podaj przedmiot wniosku.' })
+    const found = validateRequestForm({ ...values, dueOn }, { dueOnRequired: false })
+    setErrors(found)
+    if (hasErrors(found)) {
+      focusFirstInvalid(event.currentTarget)
       return
     }
     create.mutate(

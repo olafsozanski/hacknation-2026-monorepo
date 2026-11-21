@@ -3,8 +3,10 @@ import { LockKeyhole } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { AppMark } from '@/components/common/AppMark'
+import { FieldErrorText } from '@/components/common/FieldErrorText'
 import { usePageTitle } from '@/components/common/usePageTitle'
 import { A11yControls } from '@/components/layout/A11yControls'
+import { collectErrors, focusFirstInvalid, hasErrors, useFieldErrors } from '@/lib/validation'
 import { useLogin } from './session'
 
 function safeReturnPath(value: string | null) {
@@ -18,9 +20,19 @@ export function LoginPage() {
   const [params] = useSearchParams()
   const [userName, setUserName] = useState('')
   const [password, setPassword] = useState('')
+  const [errors, setErrors, clearErrors] = useFieldErrors()
 
-  const submit = (event: FormEvent) => {
+  const submit = (event: FormEvent<HTMLElement>) => {
     event.preventDefault()
+    const found = collectErrors({
+      userName: !userName.trim() && 'Podaj nazwę użytkownika.',
+      password: !password && 'Podaj hasło.',
+    })
+    setErrors(found)
+    if (hasErrors(found)) {
+      focusFirstInvalid(event.currentTarget)
+      return
+    }
     login.mutate(
       { userName, password },
       { onSuccess: () => navigate(safeReturnPath(params.get('wroc')), { replace: true }) },
@@ -61,7 +73,7 @@ export function LoginPage() {
                     <Alert.Title>{login.error.message}</Alert.Title>
                   </Alert.Root>
                 )}
-                <Field.Root required>
+                <Field.Root required invalid={!!errors.userName}>
                   <Field.Label>Nazwa użytkownika</Field.Label>
                   <Input
                     name="username"
@@ -69,10 +81,14 @@ export function LoginPage() {
                     autoFocus
                     size="lg"
                     value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
+                    onChange={(e) => {
+                      setUserName(e.target.value)
+                      clearErrors('userName')
+                    }}
                   />
+                  <FieldErrorText>{errors.userName}</FieldErrorText>
                 </Field.Root>
-                <Field.Root required>
+                <Field.Root required invalid={!!errors.password}>
                   <Field.Label>Hasło</Field.Label>
                   <Input
                     name="password"
@@ -80,10 +96,14 @@ export function LoginPage() {
                     autoComplete="current-password"
                     size="lg"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value)
+                      clearErrors('password')
+                    }}
                   />
+                  <FieldErrorText>{errors.password}</FieldErrorText>
                 </Field.Root>
-                <Button type="submit" size="lg" loading={login.isPending} disabled={!userName || !password}>
+                <Button type="submit" size="lg" loading={login.isPending}>
                   Zaloguj się
                 </Button>
               </Stack>

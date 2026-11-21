@@ -1,7 +1,10 @@
 import { Button, CloseButton, Dialog, Field, Input, Portal, Stack } from '@chakra-ui/react'
 import { useState, type FormEvent } from 'react'
 import { ApiError } from '@/api/client'
+import { DialogForm } from '@/components/common/DialogForm'
+import { FieldErrorText } from '@/components/common/FieldErrorText'
 import { notifySuccess } from '@/components/ui/toaster'
+import { collectErrors, focusFirstInvalid, hasErrors, useFieldErrors } from '@/lib/validation'
 import { useChangePassword } from './session'
 
 export function ChangePasswordDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -9,7 +12,7 @@ export function ChangePasswordDialog({ open, onClose }: { open: boolean; onClose
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [repeat, setRepeat] = useState('')
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [errors, setErrors, clearErrors] = useFieldErrors()
 
   const close = () => {
     setCurrentPassword('')
@@ -20,10 +23,16 @@ export function ChangePasswordDialog({ open, onClose }: { open: boolean; onClose
     onClose()
   }
 
-  const submit = (event: FormEvent) => {
+  const submit = (event: FormEvent<HTMLElement>) => {
     event.preventDefault()
-    if (newPassword !== repeat) {
-      setErrors({ repeat: 'Hasła nie są takie same.' })
+    const found = collectErrors({
+      currentPassword: !currentPassword && 'Podaj obecne hasło.',
+      newPassword: !newPassword ? 'Podaj nowe hasło.' : newPassword.length < 12 && 'Hasło musi mieć co najmniej 12 znaków.',
+      repeat: !repeat ? 'Powtórz nowe hasło.' : repeat !== newPassword && 'Hasła nie są takie same.',
+    })
+    setErrors(found)
+    if (hasErrors(found)) {
+      focusFirstInvalid(event.currentTarget)
       return
     }
     change.mutate(
@@ -44,7 +53,7 @@ export function ChangePasswordDialog({ open, onClose }: { open: boolean; onClose
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content as="form" onSubmit={submit}>
+          <DialogForm onSubmit={submit}>
             <Dialog.Header>
               <Dialog.Title>Zmiana hasła</Dialog.Title>
             </Dialog.Header>
@@ -58,9 +67,12 @@ export function ChangePasswordDialog({ open, onClose }: { open: boolean; onClose
                     type="password"
                     autoComplete="current-password"
                     value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    onChange={(e) => {
+                      setCurrentPassword(e.target.value)
+                      clearErrors('currentPassword')
+                    }}
                   />
-                  <Field.ErrorText>{errors.currentPassword}</Field.ErrorText>
+                  <FieldErrorText>{errors.currentPassword}</FieldErrorText>
                 </Field.Root>
                 <Field.Root required invalid={!!errors.newPassword}>
                   <Field.Label>
@@ -69,12 +81,14 @@ export function ChangePasswordDialog({ open, onClose }: { open: boolean; onClose
                   <Input
                     type="password"
                     autoComplete="new-password"
-                    minLength={12}
                     value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    onChange={(e) => {
+                      setNewPassword(e.target.value)
+                      clearErrors('newPassword')
+                    }}
                   />
                   <Field.HelperText>Co najmniej 12 znaków, w tym wielka i mała litera oraz cyfra.</Field.HelperText>
-                  <Field.ErrorText>{errors.newPassword}</Field.ErrorText>
+                  <FieldErrorText>{errors.newPassword}</FieldErrorText>
                 </Field.Root>
                 <Field.Root required invalid={!!errors.repeat}>
                   <Field.Label>
@@ -84,9 +98,12 @@ export function ChangePasswordDialog({ open, onClose }: { open: boolean; onClose
                     type="password"
                     autoComplete="new-password"
                     value={repeat}
-                    onChange={(e) => setRepeat(e.target.value)}
+                    onChange={(e) => {
+                      setRepeat(e.target.value)
+                      clearErrors('repeat')
+                    }}
                   />
-                  <Field.ErrorText>{errors.repeat}</Field.ErrorText>
+                  <FieldErrorText>{errors.repeat}</FieldErrorText>
                 </Field.Root>
               </Stack>
             </Dialog.Body>
@@ -101,7 +118,7 @@ export function ChangePasswordDialog({ open, onClose }: { open: boolean; onClose
             <Dialog.CloseTrigger asChild>
               <CloseButton size="sm" aria-label="Zamknij" />
             </Dialog.CloseTrigger>
-          </Dialog.Content>
+          </DialogForm>
         </Dialog.Positioner>
       </Portal>
     </Dialog.Root>

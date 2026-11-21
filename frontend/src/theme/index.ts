@@ -108,6 +108,7 @@ const config = defineConfig({
           DEFAULT: hc('#1b1b1b', '#ffffff'),
           muted: hc('#4f4f4f', '#f0f0f0'),
           subtle: hc('#616161', '#d9d9d9'),
+          error: hc('#b91c1c', highContrastPalettes.red),
         },
         border: {
           DEFAULT: hc('#d9dadc', '#ffffff'),

@@ -21,12 +21,15 @@ import { useState, type FormEvent } from 'react'
 import { ApiError, api, downloadFile } from '@/api/client'
 import type { KnowledgeDocument, KnowledgeKind } from '@/api/types'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { DialogForm } from '@/components/common/DialogForm'
+import { FieldErrorText } from '@/components/common/FieldErrorText'
 import { PageHeader } from '@/components/common/PageHeader'
 import { EmptyHint, ErrorState, LoadingState } from '@/components/common/States'
 import { notifyError, notifySuccess } from '@/components/ui/toaster'
 import { useSystemInfo } from '@/features/platform/api'
 import { formatDateTime, plural } from '@/lib/dates'
 import { knowledgeKindLabels } from '@/lib/labels'
+import { focusFirstInvalid } from '@/lib/validation'
 
 const knowledgeQueryKey = ['knowledge']
 
@@ -50,10 +53,11 @@ function UploadDialog({ open, onClose }: { open: boolean; onClose: () => void })
     onClose()
   }
 
-  const submit = async (event: FormEvent) => {
+  const submit = async (event: FormEvent<HTMLElement>) => {
     event.preventDefault()
     if (files.length === 0) {
       setError('Wybierz co najmniej jeden plik.')
+      focusFirstInvalid(event.currentTarget)
       return
     }
     setError(null)
@@ -88,14 +92,16 @@ function UploadDialog({ open, onClose }: { open: boolean; onClose: () => void })
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content as="form" onSubmit={submit}>
+          <DialogForm onSubmit={submit}>
             <Dialog.Header>
               <Dialog.Title>Dodaj dokumenty do bazy wiedzy</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
               <Stack gap="4">
                 <Field.Root required invalid={!!error}>
-                  <Field.Label>Pliki (PDF, DOCX, TXT — można wybrać wiele)</Field.Label>
+                  <Field.Label>
+                    Pliki (PDF, DOCX, TXT — można wybrać wiele) <Field.RequiredIndicator />
+                  </Field.Label>
                   <FileUpload.Root
                     maxFiles={100}
                     maxFileSize={20 * 1024 * 1024}
@@ -119,7 +125,7 @@ function UploadDialog({ open, onClose }: { open: boolean; onClose: () => void })
                       {files.length === 1 ? files[0].name : `Wybrano ${files.length} ${plural(files.length, 'plik', 'pliki', 'plików')}`}
                     </Text>
                   )}
-                  <Field.ErrorText>{error}</Field.ErrorText>
+                  <FieldErrorText>{error}</FieldErrorText>
                 </Field.Root>
                 {files.length <= 1 && (
                   <Field.Root>
@@ -165,14 +171,14 @@ function UploadDialog({ open, onClose }: { open: boolean; onClose: () => void })
               <Button variant="outline" onClick={close} disabled={uploading}>
                 {progress && !uploading ? 'Zamknij' : 'Anuluj'}
               </Button>
-              <Button type="submit" loading={uploading} loadingText="Przesyłanie…" disabled={files.length === 0}>
+              <Button type="submit" loading={uploading} loadingText="Przesyłanie…">
                 Dodaj
               </Button>
             </Dialog.Footer>
             <Dialog.CloseTrigger asChild>
               <CloseButton size="sm" aria-label="Zamknij" disabled={uploading} />
             </Dialog.CloseTrigger>
-          </Dialog.Content>
+          </DialogForm>
         </Dialog.Positioner>
       </Portal>
     </Dialog.Root>

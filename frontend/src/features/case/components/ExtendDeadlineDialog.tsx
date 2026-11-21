@@ -3,7 +3,10 @@ import { useState, type FormEvent } from 'react'
 import { ApiError } from '@/api/client'
 import type { ExtensionKind, ExtensionResult, RequestDetail } from '@/api/types'
 import { CopyButton } from '@/components/common/CopyButton'
+import { DialogForm } from '@/components/common/DialogForm'
+import { FieldErrorText } from '@/components/common/FieldErrorText'
 import { formatDate } from '@/lib/dates'
+import { collectErrors, focusFirstInvalid, hasErrors, useFieldErrors } from '@/lib/validation'
 import { useExtendDeadline } from '../api'
 
 export function ExtendDeadlineDialog({ request, open, onClose }: { request: RequestDetail; open: boolean; onClose: () => void }) {
@@ -11,18 +14,21 @@ export function ExtendDeadlineDialog({ request, open, onClose }: { request: Requ
   const [kind, setKind] = useState<ExtensionKind>('Query')
   const [days, setDays] = useState('30')
   const [reason, setReason] = useState('')
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [errors, setErrors, clearErrors] = useFieldErrors()
   const [result, setResult] = useState<ExtensionResult | null>(null)
 
-  const submit = (event: FormEvent) => {
+  const submit = (event: FormEvent<HTMLElement>) => {
     event.preventDefault()
     const value = Number(days)
-    if (!Number.isInteger(value) || value < 1 || value > 62) {
-      setErrors({ days: 'Podaj liczbę dni od 1 do 62.' })
-      return
-    }
-    if (!reason.trim()) {
-      setErrors({ reason: kind === 'Query' ? 'Podaj przyczynę przedłużenia — zostanie wskazana w zawiadomieniu.' : 'Opisz, czego ma dotyczyć doprecyzowanie.' })
+    const found = collectErrors({
+      days: (!days.trim() || !Number.isInteger(value) || value < 1 || value > 62) && 'Podaj liczbę dni od 1 do 62.',
+      reason:
+        !reason.trim() &&
+        (kind === 'Query' ? 'Podaj przyczynę przedłużenia — zostanie wskazana w zawiadomieniu.' : 'Opisz, czego ma dotyczyć doprecyzowanie.'),
+    })
+    setErrors(found)
+    if (hasErrors(found)) {
+      focusFirstInvalid(event.currentTarget)
       return
     }
     extend.mutate(
@@ -39,7 +45,7 @@ export function ExtendDeadlineDialog({ request, open, onClose }: { request: Requ
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content as="form" onSubmit={submit}>
+          <DialogForm onSubmit={submit}>
             <Dialog.Header>
               <Dialog.Title>{result ? 'Termin przedłużony' : 'Przedłużenie terminu odpowiedzi'}</Dialog.Title>
             </Dialog.Header>
@@ -102,9 +108,13 @@ export function ExtendDeadlineDialog({ request, open, onClose }: { request: Requ
                     <Field.Label>
                       Liczba dni przedłużenia <Field.RequiredIndicator />
                     </Field.Label>
-                    <Input type="number" inputMode="numeric" min={1} max={62} value={days} onChange={(e) => setDays(e.target.value)} />
+                    <Input type="number" inputMode="numeric" min={1} max={62} value={days} onChange={(e) => {
+                        setDays(e.target.value)
+                        clearErrors('days')
+                      }}
+                    />
                     <Field.HelperText>Liczone od terminu ustawowego ({formatDate(request.dueOn)}).</Field.HelperText>
-                    <Field.ErrorText>{errors.days}</Field.ErrorText>
+                    <FieldErrorText>{errors.days}</FieldErrorText>
                   </Field.Root>
                   <Field.Root required invalid={!!errors.reason}>
                     <Field.Label>
@@ -119,9 +129,12 @@ export function ExtendDeadlineDialog({ request, open, onClose }: { request: Requ
                           : 'Np. wskazanie, o jakie dokładnie akta sprawy budowlanej chodzi'
                       }
                       value={reason}
-                      onChange={(e) => setReason(e.target.value)}
+                      onChange={(e) => {
+                        setReason(e.target.value)
+                        clearErrors('reason')
+                      }}
                     />
-                    <Field.ErrorText>{errors.reason}</Field.ErrorText>
+                    <FieldErrorText>{errors.reason}</FieldErrorText>
                   </Field.Root>
                 </Stack>
               )}
@@ -146,7 +159,7 @@ export function ExtendDeadlineDialog({ request, open, onClose }: { request: Requ
             <Dialog.CloseTrigger asChild>
               <CloseButton size="sm" aria-label="Zamknij" />
             </Dialog.CloseTrigger>
-          </Dialog.Content>
+          </DialogForm>
         </Dialog.Positioner>
       </Portal>
     </Dialog.Root>

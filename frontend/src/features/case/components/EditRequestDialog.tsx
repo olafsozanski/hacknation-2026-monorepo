@@ -2,9 +2,12 @@ import { Alert, Button, CloseButton, Dialog, Field, Portal, Stack, Textarea } fr
 import { useState, type FormEvent } from 'react'
 import { ApiError } from '@/api/client'
 import type { RequestDetail } from '@/api/types'
+import { DialogForm } from '@/components/common/DialogForm'
 import { RequestFormFields, type RequestFormValues } from '@/components/domain/RequestFormFields'
+import { validateRequestForm } from '@/components/domain/validateRequestForm'
 import { notifySuccess } from '@/components/ui/toaster'
 import { useUsers } from '@/features/platform/api'
+import { focusFirstInvalid, hasErrors, useFieldErrors } from '@/lib/validation'
 import { useUpdateRequest } from '../api'
 
 function toValues(request: RequestDetail): RequestFormValues {
@@ -25,10 +28,16 @@ export function EditRequestDialog({ request, open, onClose }: { request: Request
   const { data: users = [] } = useUsers()
   const [values, setValues] = useState(() => toValues(request))
   const [content, setContent] = useState(request.content)
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [errors, setErrors, clearErrors] = useFieldErrors()
 
-  const submit = (event: FormEvent) => {
+  const submit = (event: FormEvent<HTMLElement>) => {
     event.preventDefault()
+    const found = validateRequestForm(values)
+    setErrors(found)
+    if (hasErrors(found)) {
+      focusFirstInvalid(event.currentTarget)
+      return
+    }
     update.mutate(
       {
         subject: values.subject.trim(),
@@ -58,7 +67,7 @@ export function EditRequestDialog({ request, open, onClose }: { request: Request
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content as="form" onSubmit={submit}>
+          <DialogForm onSubmit={submit}>
             <Dialog.Header>
               <Dialog.Title>Edycja danych sprawy</Dialog.Title>
             </Dialog.Header>
@@ -72,7 +81,10 @@ export function EditRequestDialog({ request, open, onClose }: { request: Request
                 )}
                 <RequestFormFields
                   values={values}
-                  onChange={(c) => setValues((v) => ({ ...v, ...c }))}
+                  onChange={(c) => {
+                    setValues((v) => ({ ...v, ...c }))
+                    clearErrors(...Object.keys(c))
+                  }}
                   errors={errors}
                   users={users}
                   portalled={false}
@@ -94,7 +106,7 @@ export function EditRequestDialog({ request, open, onClose }: { request: Request
             <Dialog.CloseTrigger asChild>
               <CloseButton size="sm" aria-label="Zamknij" />
             </Dialog.CloseTrigger>
-          </Dialog.Content>
+          </DialogForm>
         </Dialog.Positioner>
       </Portal>
     </Dialog.Root>

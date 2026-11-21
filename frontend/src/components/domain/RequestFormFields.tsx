@@ -2,6 +2,7 @@ import { Badge, Field, Grid, GridItem, Input, NativeSelect, Textarea } from '@ch
 import type { ReactNode } from 'react'
 import type { ReplyChannel, UserSummary } from '@/api/types'
 import { DateInput } from '@/components/common/DateInput'
+import { FieldErrorText } from '@/components/common/FieldErrorText'
 import { todayIso } from '@/lib/dates'
 import { replyChannelLabels } from '@/lib/labels'
 
@@ -55,7 +56,7 @@ export function RequestFormFields({ values, onChange, errors, users, aiFields, h
             onChange={(e) => onChange({ subject: e.target.value })}
           />
           <Field.HelperText>Krótki opis, którym wniosek będzie oznaczony w rejestrze.</Field.HelperText>
-          <Field.ErrorText>{errors.subject}</Field.ErrorText>
+          <FieldErrorText>{errors.subject}</FieldErrorText>
         </Field.Root>
       </GridItem>
       <Field.Root required invalid={!!errors.receivedOn}>
@@ -64,7 +65,7 @@ export function RequestFormFields({ values, onChange, errors, users, aiFields, h
         </Field.Label>
         <DateInput value={values.receivedOn} max={today} onChange={(receivedOn) => onChange({ receivedOn })} portalled={portalled} />
         {hints.receivedOn && <Field.HelperText>{hints.receivedOn}</Field.HelperText>}
-        <Field.ErrorText>{errors.receivedOn}</Field.ErrorText>
+        <FieldErrorText>{errors.receivedOn}</FieldErrorText>
       </Field.Root>
       <Field.Root required invalid={!!errors.dueOn}>
         <Field.Label>
@@ -72,13 +73,13 @@ export function RequestFormFields({ values, onChange, errors, users, aiFields, h
         </Field.Label>
         <DateInput value={values.dueOn} min={values.receivedOn || undefined} onChange={(dueOn) => onChange({ dueOn })} portalled={portalled} />
         {hints.dueOn && <Field.HelperText>{hints.dueOn}</Field.HelperText>}
-        <Field.ErrorText>{errors.dueOn}</Field.ErrorText>
+        <FieldErrorText>{errors.dueOn}</FieldErrorText>
       </Field.Root>
       <Field.Root invalid={!!errors.caseNumber}>
         <Field.Label>Znak sprawy</Field.Label>
         <Input value={values.caseNumber} maxLength={64} onChange={(e) => onChange({ caseNumber: e.target.value })} />
         {hints.caseNumber && <Field.HelperText>{hints.caseNumber}</Field.HelperText>}
-        <Field.ErrorText>{errors.caseNumber}</Field.ErrorText>
+        <FieldErrorText>{errors.caseNumber}</FieldErrorText>
       </Field.Root>
       <Field.Root invalid={!!errors.assigneeId}>
         <Field.Label>Prowadzący sprawę</Field.Label>
@@ -93,7 +94,7 @@ export function RequestFormFields({ values, onChange, errors, users, aiFields, h
           </NativeSelect.Field>
           <NativeSelect.Indicator />
         </NativeSelect.Root>
-        <Field.ErrorText>{errors.assigneeId}</Field.ErrorText>
+        <FieldErrorText>{errors.assigneeId}</FieldErrorText>
       </Field.Root>
       <Field.Root invalid={!!errors.requesterName}>
         <Field.Label>
@@ -106,7 +107,7 @@ export function RequestFormFields({ values, onChange, errors, users, aiFields, h
           autoComplete="off"
           onChange={(e) => onChange({ requesterName: e.target.value })}
         />
-        <Field.ErrorText>{errors.requesterName}</Field.ErrorText>
+        <FieldErrorText>{errors.requesterName}</FieldErrorText>
       </Field.Root>
       <Field.Root invalid={!!errors.requesterContact}>
         <Field.Label>
@@ -120,7 +121,7 @@ export function RequestFormFields({ values, onChange, errors, users, aiFields, h
           placeholder="E-mail, adres pocztowy lub skrytka ePUAP"
           onChange={(e) => onChange({ requesterContact: e.target.value })}
         />
-        <Field.ErrorText>{errors.requesterContact}</Field.ErrorText>
+        <FieldErrorText>{errors.requesterContact}</FieldErrorText>
       </Field.Root>
       <Field.Root>
         <Field.Label>

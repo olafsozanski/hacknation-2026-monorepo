@@ -4,9 +4,12 @@ import { KeyRound, Pencil, UserPlus } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { ApiError, api } from '@/api/client'
 import type { UserListItem } from '@/api/types'
+import { DialogForm } from '@/components/common/DialogForm'
+import { FieldErrorText } from '@/components/common/FieldErrorText'
 import { PageHeader } from '@/components/common/PageHeader'
 import { ErrorState, LoadingState } from '@/components/common/States'
 import { notifySuccess } from '@/components/ui/toaster'
+import { collectErrors, focusFirstInvalid, hasErrors, useFieldErrors } from '@/lib/validation'
 
 const usersKey = ['admin', 'users']
 
@@ -21,7 +24,7 @@ function UserDialog({ state, onClose }: { state: Exclude<DialogState, null>; onC
   const [password, setPassword] = useState('')
   const [isAdmin, setIsAdmin] = useState(user?.isAdmin ?? false)
   const [isActive, setIsActive] = useState(user?.isActive ?? true)
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [errors, setErrors, clearErrors] = useFieldErrors()
 
   const save = useMutation({
     mutationFn: () => {
@@ -40,8 +43,27 @@ function UserDialog({ state, onClose }: { state: Exclude<DialogState, null>; onC
     onError: (e) => setErrors(e instanceof ApiError ? { ...e.fieldErrors, form: e.message } : {}),
   })
 
-  const submit = (event: FormEvent) => {
+  const validate = () =>
+    collectErrors({
+      userName:
+        state.mode === 'create' &&
+        (!userName.trim()
+          ? 'Podaj login.'
+          : !/^[a-zA-Z0-9._@-]+$/.test(userName.trim()) && 'Login może zawierać tylko litery bez polskich znaków, cyfry oraz znaki . _ @ -'),
+      fullName: state.mode !== 'password' && !fullName.trim() && 'Podaj imię i nazwisko.',
+      initials: state.mode !== 'password' && !initials.trim() && 'Podaj inicjały.',
+      password:
+        state.mode !== 'edit' && (!password ? 'Podaj hasło.' : password.length < 12 && 'Hasło musi mieć co najmniej 12 znaków.'),
+    })
+
+  const submit = (event: FormEvent<HTMLElement>) => {
     event.preventDefault()
+    const found = validate()
+    setErrors(found)
+    if (hasErrors(found)) {
+      focusFirstInvalid(event.currentTarget)
+      return
+    }
     save.mutate()
   }
 
@@ -52,7 +74,7 @@ function UserDialog({ state, onClose }: { state: Exclude<DialogState, null>; onC
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content as="form" onSubmit={submit}>
+          <DialogForm onSubmit={submit}>
             <Dialog.Header>
               <Dialog.Title>{title}</Dialog.Title>
             </Dialog.Header>
@@ -65,31 +87,67 @@ function UserDialog({ state, onClose }: { state: Exclude<DialogState, null>; onC
                 )}
                 {state.mode === 'create' && (
                   <Field.Root required invalid={!!errors.userName}>
-                    <Field.Label>Login</Field.Label>
-                    <Input value={userName} onChange={(e) => setUserName(e.target.value)} autoComplete="off" />
-                    <Field.ErrorText>{errors.userName}</Field.ErrorText>
+                    <Field.Label>
+                      Login <Field.RequiredIndicator />
+                    </Field.Label>
+                    <Input
+                      value={userName}
+                      onChange={(e) => {
+                        setUserName(e.target.value)
+                        clearErrors('userName')
+                      }}
+                      autoComplete="off"
+                    />
+                    <FieldErrorText>{errors.userName}</FieldErrorText>
                   </Field.Root>
                 )}
                 {state.mode !== 'password' && (
                   <Grid templateColumns="1fr 8rem" gap="3">
                     <Field.Root required invalid={!!errors.fullName}>
-                      <Field.Label>Imię i nazwisko</Field.Label>
-                      <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
-                      <Field.ErrorText>{errors.fullName}</Field.ErrorText>
+                      <Field.Label>
+                        Imię i nazwisko <Field.RequiredIndicator />
+                      </Field.Label>
+                      <Input
+                        value={fullName}
+                        onChange={(e) => {
+                          setFullName(e.target.value)
+                          clearErrors('fullName')
+                        }}
+                      />
+                      <FieldErrorText>{errors.fullName}</FieldErrorText>
                     </Field.Root>
                     <Field.Root required invalid={!!errors.initials}>
-                      <Field.Label>Inicjały</Field.Label>
-                      <Input value={initials} maxLength={8} onChange={(e) => setInitials(e.target.value.toUpperCase())} />
-                      <Field.ErrorText>{errors.initials}</Field.ErrorText>
+                      <Field.Label>
+                        Inicjały <Field.RequiredIndicator />
+                      </Field.Label>
+                      <Input
+                        value={initials}
+                        maxLength={8}
+                        onChange={(e) => {
+                          setInitials(e.target.value.toUpperCase())
+                          clearErrors('initials')
+                        }}
+                      />
+                      <FieldErrorText>{errors.initials}</FieldErrorText>
                     </Field.Root>
                   </Grid>
                 )}
                 {state.mode !== 'edit' && (
                   <Field.Root required invalid={!!errors.password || !!errors.newPassword}>
-                    <Field.Label>{state.mode === 'create' ? 'Hasło początkowe' : 'Nowe hasło'}</Field.Label>
-                    <Input type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <Field.Label>
+                      {state.mode === 'create' ? 'Hasło początkowe' : 'Nowe hasło'} <Field.RequiredIndicator />
+                    </Field.Label>
+                    <Input
+                      type="password"
+                      autoComplete="new-password"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value)
+                        clearErrors('password', 'newPassword')
+                      }}
+                    />
                     <Field.HelperText>Co najmniej 12 znaków, wielka i mała litera oraz cyfra. Przekaż je użytkownikowi bezpiecznym kanałem.</Field.HelperText>
-                    <Field.ErrorText>{errors.password ?? errors.newPassword}</Field.ErrorText>
+                    <FieldErrorText>{errors.password ?? errors.newPassword}</FieldErrorText>
                   </Field.Root>
                 )}
                 {state.mode !== 'password' && (
@@ -122,7 +180,7 @@ function UserDialog({ state, onClose }: { state: Exclude<DialogState, null>; onC
             <Dialog.CloseTrigger asChild>
               <CloseButton size="sm" aria-label="Zamknij" />
             </Dialog.CloseTrigger>
-          </Dialog.Content>
+          </DialogForm>
         </Dialog.Positioner>
       </Portal>
     </Dialog.Root>

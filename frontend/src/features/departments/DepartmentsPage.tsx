@@ -4,11 +4,14 @@ import { ChevronDown, Mail, Pencil, Search } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 import { ApiError, api } from '@/api/client'
 import type { Department } from '@/api/types'
+import { DialogForm } from '@/components/common/DialogForm'
+import { FieldErrorText } from '@/components/common/FieldErrorText'
 import { PageHeader } from '@/components/common/PageHeader'
 import { ErrorState, LoadingState } from '@/components/common/States'
 import { notifySuccess } from '@/components/ui/toaster'
 import { useCurrentUser } from '@/features/auth/session'
 import { departmentsQuery, useDepartments } from '@/features/platform/api'
+import { collectErrors, focusFirstInvalid, hasErrors, isEmail, useFieldErrors } from '@/lib/validation'
 
 function EditDepartmentDialog({ department, onClose }: { department: Department; onClose: () => void }) {
   const queryClient = useQueryClient()
@@ -16,7 +19,7 @@ function EditDepartmentDialog({ department, onClose }: { department: Department;
   const [scope, setScope] = useState(department.scope)
   const [email, setEmail] = useState(department.email ?? '')
   const [isActive, setIsActive] = useState(department.isActive)
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [errors, setErrors, clearErrors] = useFieldErrors()
   const save = useMutation({
     mutationFn: () =>
       api<void>(`/api/admin/departments/${department.id}`, {
@@ -31,8 +34,17 @@ function EditDepartmentDialog({ department, onClose }: { department: Department;
     onError: (e) => setErrors(e instanceof ApiError ? { ...e.fieldErrors, form: e.message } : {}),
   })
 
-  const submit = (event: FormEvent) => {
+  const submit = (event: FormEvent<HTMLElement>) => {
     event.preventDefault()
+    const found = collectErrors({
+      name: !name.trim() && 'Podaj nazwę wydziału.',
+      email: !!email.trim() && !isEmail(email.trim()) && 'Podaj poprawny adres e-mail, np. sekretariat@um.bydgoszcz.pl.',
+    })
+    setErrors(found)
+    if (hasErrors(found)) {
+      focusFirstInvalid(event.currentTarget)
+      return
+    }
     save.mutate()
   }
 
@@ -41,7 +53,7 @@ function EditDepartmentDialog({ department, onClose }: { department: Department;
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content as="form" onSubmit={submit}>
+          <DialogForm onSubmit={submit}>
             <Dialog.Header>
               <Dialog.Title>
                 {department.symbol} — edycja
@@ -50,14 +62,29 @@ function EditDepartmentDialog({ department, onClose }: { department: Department;
             <Dialog.Body>
               <Stack gap="4">
                 <Field.Root required invalid={!!errors.name}>
-                  <Field.Label>Nazwa</Field.Label>
-                  <Input value={name} onChange={(e) => setName(e.target.value)} />
-                  <Field.ErrorText>{errors.name}</Field.ErrorText>
+                  <Field.Label>
+                    Nazwa <Field.RequiredIndicator />
+                  </Field.Label>
+                  <Input
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value)
+                      clearErrors('name')
+                    }}
+                  />
+                  <FieldErrorText>{errors.name}</FieldErrorText>
                 </Field.Root>
                 <Field.Root invalid={!!errors.email}>
                   <Field.Label>E-mail</Field.Label>
-                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                  <Field.ErrorText>{errors.email}</Field.ErrorText>
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value)
+                      clearErrors('email')
+                    }}
+                  />
+                  <FieldErrorText>{errors.email}</FieldErrorText>
                 </Field.Root>
                 <Field.Root>
                   <Field.Label>Zakres działania</Field.Label>
@@ -82,7 +109,7 @@ function EditDepartmentDialog({ department, onClose }: { department: Department;
             <Dialog.CloseTrigger asChild>
               <CloseButton size="sm" aria-label="Zamknij" />
             </Dialog.CloseTrigger>
-          </Dialog.Content>
+          </DialogForm>
         </Dialog.Positioner>
       </Portal>
     </Dialog.Root>
