@@ -73,19 +73,22 @@ export function addManual(redactions: Redaction[], content: string, start: numbe
   return sortRedactions([...kept, added])
 }
 
+function escapeRegExp(text: string) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 export function addPhrase(redactions: Redaction[], content: string, phrase: string) {
   const needle = phrase.trim()
   if (!needle) return { redactions, added: 0 }
   let result = redactions
   let added = 0
-  let from = content.indexOf(needle)
-  while (from >= 0) {
-    const to = from + needle.length
+  for (const match of content.matchAll(new RegExp(escapeRegExp(needle), 'giu'))) {
+    const from = match.index
+    const to = from + match[0].length
     if (!result.some((r) => r.start < to && from < r.start + r.length && r.status === 'Approved')) {
       result = addManual(result, content, from, to)
       added++
     }
-    from = content.indexOf(needle, to)
   }
   return { redactions: result, added }
 }

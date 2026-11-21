@@ -37,6 +37,18 @@ describe('editing redactions', () => {
     expect(added).toBe(2)
     expect(redactions.map((r) => r.start)).toEqual([0, 18])
   })
+
+  it('matches a phrase regardless of letter case and keeps the original text', () => {
+    const text = 'ŁUKASZ Żak pisze. Łukasz żak prosi.'
+    const { redactions, added } = addPhrase([], text, 'łukasz żak')
+    expect(added).toBe(2)
+    expect(redactions.map((r) => r.text)).toEqual(['ŁUKASZ Żak', 'Łukasz żak'])
+  })
+
+  it('treats regular expression characters in a phrase literally', () => {
+    const { added } = addPhrase([], 'Sygn. akt (I) 1.2 i 1x2', '(i) 1.2')
+    expect(added).toBe(1)
+  })
 })
 
 describe('splitPlaceholders', () => {
