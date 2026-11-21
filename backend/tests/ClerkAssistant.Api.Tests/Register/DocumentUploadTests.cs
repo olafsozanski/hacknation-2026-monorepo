@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using ClerkAssistant.Api.Domain;
@@ -22,7 +21,7 @@ public class DocumentUploadTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var id = await client.CreateRequestAsync("Koszt remontu fontanny", Today);
 
         var response = await client.PostAsync($"/api/requests/{id}/documents",
-            Form("odpowiedz.pdf", "<html>to nie jest PDF</html>"u8.ToArray()), Ct);
+            UploadForm("odpowiedz.pdf", "<html>to nie jest PDF</html>"u8.ToArray()), Ct);
 
         Assert.Contains("file", (await response.ValidationErrorsAsync()).Keys);
         Assert.Empty((await client.GetRequestAsync(id)).Documents);
@@ -36,7 +35,7 @@ public class DocumentUploadTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var id = await client.CreateRequestAsync("Koszt oświetlenia parku", Today);
         client.DefaultRequestHeaders.Remove(ApiClient.CsrfHeader);
 
-        var response = await client.PostAsync($"/api/requests/{id}/documents", Form("odpowiedz.txt", "Treść"u8.ToArray()), Ct);
+        var response = await client.PostAsync($"/api/requests/{id}/documents", UploadForm("odpowiedz.txt", "Treść"u8.ToArray()), Ct);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Empty((await client.GetRequestAsync(id)).Documents);
@@ -52,7 +51,7 @@ public class DocumentUploadTests(ApiFactory factory) : IClassFixture<ApiFactory>
         const string text = "W 2026 r. posadzono 1 250 drzew.";
 
         var upload = await client.PostAsync($"/api/requests/{id}/documents",
-            Form("odpowiedź WGK.txt", Encoding.UTF8.GetBytes(text), DocumentKind.DepartmentReply, wgk), Ct);
+            UploadForm("odpowiedź WGK.txt", Encoding.UTF8.GetBytes(text), nameof(DocumentKind.DepartmentReply), wgk), Ct);
         Assert.Equal(HttpStatusCode.Created, upload.StatusCode);
         var document = await upload.Content.ReadFromJsonAsync<DocumentDto>(ApiClient.Json, Ct);
         var detail = await client.GetRequestAsync(id);
@@ -76,25 +75,10 @@ public class DocumentUploadTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.NoContent, delete.StatusCode);
         Assert.Empty((await client.GetRequestAsync(id)).Documents);
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/documents/{document.Id}/content", Ct)).StatusCode);
-        Assert.Equal(["document.deleted", "document.uploaded"], history.Take(2).Select(h => h.Action));
+        Assert.Equal(
+            ["document.deleted", "document.text-viewed", "document.downloaded", "document.uploaded"],
+            history.Take(4).Select(h => h.Action));
+        Assert.All(history.Take(4), h => Assert.Equal("Odpowiedź wydziału WGK (TXT)", h.Details));
         Assert.DoesNotContain(history, h => h.Details?.Contains(text) == true);
-    }
-
-    private static MultipartFormDataContent Form(string fileName, byte[] content, DocumentKind? kind = null, Guid? departmentId = null)
-    {
-        var file = new ByteArrayContent(content);
-        file.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-        var form = new MultipartFormDataContent { { file, "file", fileName } };
-        if (kind is not null)
-        {
-            form.Add(new StringContent(kind.ToString()!), "kind");
-        }
-
-        if (departmentId is not null)
-        {
-            form.Add(new StringContent(departmentId.ToString()!), "departmentId");
-        }
-
-        return form;
     }
 }

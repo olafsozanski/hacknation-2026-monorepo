@@ -6,6 +6,8 @@ public sealed class NotFoundException(string message = "Nie znaleziono zasobu.")
 
 public sealed class ConflictException(string message) : AppException(message);
 
+public sealed class ForbiddenException(string message) : AppException(message);
+
 public sealed class AuthenticationFailedException(string message, bool lockedOut = false) : AppException(message)
 {
     public bool LockedOut { get; } = lockedOut;

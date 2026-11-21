@@ -176,6 +176,29 @@ public class RequestWorkflowTests(ApiFactory factory) : IClassFixture<ApiFactory
         Assert.True(history[0].At > history[1].At);
     }
 
+    [Fact]
+    public async Task Unknown_resources_return_not_found_problems()
+    {
+        factory.SetToday(Today);
+        var client = await factory.CreateAuthenticatedClientAsync();
+        var id = await client.CreateRequestAsync("Wniosek bez wydziałów", Today);
+
+        var responses = new[]
+        {
+            await client.GetAsync($"/api/requests/{Guid.NewGuid()}", Ct),
+            await client.PostAsJsonAsync($"/api/requests/{Guid.NewGuid()}/extension",
+                new ExtendDeadlineRequest(10, "Kwerenda", 1), ApiClient.Json, Ct),
+            await client.PatchAsJsonAsync($"/api/requests/{id}/departments/{Guid.NewGuid()}",
+                new UpdateRequestDepartmentRequest(Today, null), ApiClient.Json, Ct),
+            await client.GetAsync($"/api/documents/{Guid.NewGuid()}/text", Ct),
+            await client.DeleteAsync($"/api/documents/{Guid.NewGuid()}", Ct),
+        };
+
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.NotFound, r.StatusCode));
+        var problem = await responses[0].Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>(ApiClient.Json, Ct);
+        Assert.Equal("Nie znaleziono wniosku.", problem!.Detail);
+    }
+
     private static UpdateRequestRequest ToUpdate(RequestDetail detail, string subject) => new(
         subject,
         detail.Content,
