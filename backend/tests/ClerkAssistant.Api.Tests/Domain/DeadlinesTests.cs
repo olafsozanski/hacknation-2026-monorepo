@@ -56,7 +56,7 @@ public class DeadlinesTests
 
     private static InfoRequest NewRequest(DateOnly dueOn, RequestStatus status) => new()
     {
-        CaseNumber = "BKS.1431.1.2026",
+        CaseNumber = "BKS.IV.1431.1.2026",
         Subject = "Test",
         DueOn = dueOn,
         Status = status,

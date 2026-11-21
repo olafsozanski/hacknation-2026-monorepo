@@ -133,7 +133,7 @@ public sealed class HybridSearch(AppDbContext db, AiGateway ai)
         {
             fusion.Add(SearchHitKind.Request, await requests
                 .Where(r => r.Embedding != null)
-                .Select(r => new { r.Id, Distance = r.Embedding!.CosineDistance(vector) })
+                .Select(r => new { r.Id, Distance = r.Embedding!.Vector.CosineDistance(vector) })
                 .Where(x => x.Distance <= MaxCosineDistance)
                 .OrderBy(x => x.Distance)
                 .Select(x => new RankedItem(x.Id, null))

@@ -18,7 +18,6 @@ public class InfoRequestConfiguration : IEntityTypeConfiguration<InfoRequest>
         builder.Property(x => x.RequesterContact).HasMaxLength(500);
         builder.Property(x => x.ExtensionReason).HasMaxLength(2000);
         builder.Property(x => x.Version).IsRowVersion();
-        builder.Property(x => x.Embedding).HasColumnType($"vector({AppDbContext.EmbeddingDimensions})");
         builder.Ignore(x => x.EffectiveDueOn);
         builder.Ignore(x => x.IsClosed);
 
@@ -26,7 +25,6 @@ public class InfoRequestConfiguration : IEntityTypeConfiguration<InfoRequest>
             .HasIndex(x => x.SearchVector)
             .HasMethod("gin");
         builder.HasIndex(x => x.Subject).HasMethod("gin").HasOperators("gin_trgm_ops");
-        builder.HasIndex(x => x.Embedding).HasMethod("hnsw").HasOperators("vector_cosine_ops");
         builder.HasIndex(x => new { x.Year, x.SequenceNumber }).IsUnique();
         builder.HasIndex(x => x.CaseNumber).IsUnique();
         builder.HasIndex(x => x.ReceivedOn);
@@ -35,6 +33,18 @@ public class InfoRequestConfiguration : IEntityTypeConfiguration<InfoRequest>
         builder.HasMany(x => x.Departments).WithOne().HasForeignKey(x => x.RequestId).OnDelete(DeleteBehavior.Cascade);
         builder.HasMany(x => x.Documents).WithOne().HasForeignKey(x => x.RequestId).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(x => x.Draft).WithOne().HasForeignKey<ResponseDraft>(x => x.RequestId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(x => x.Embedding).WithOne().HasForeignKey<RequestEmbedding>(x => x.RequestId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class RequestEmbeddingConfiguration : IEntityTypeConfiguration<RequestEmbedding>
+{
+    public void Configure(EntityTypeBuilder<RequestEmbedding> builder)
+    {
+        builder.ToTable("request_embeddings");
+        builder.HasKey(x => x.RequestId);
+        builder.Property(x => x.Vector).HasColumnType($"vector({AppDbContext.EmbeddingDimensions})");
+        builder.HasIndex(x => x.Vector).HasMethod("hnsw").HasOperators("vector_cosine_ops");
     }
 }
 

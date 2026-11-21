@@ -65,7 +65,7 @@ public class AiFeaturesTests(AiApiFactory factory) : IClassFixture<AiApiFactory>
         Assert.True(result.Suggestion.LooksLikePublicInformationRequest);
         Assert.Equal(new DateOnly(2026, 11, 18), result.SuggestedReceivedOn);
         Assert.Equal(Deadlines.InitialDueDate(new DateOnly(2026, 11, 18)), result.SuggestedDueOn);
-        Assert.Matches(@"^BKS\.1431\.\d+\.2026$", result.SuggestedCaseNumber);
+        Assert.Matches(@"^BKS\.IV\.1431\.\d+\.2026$", result.SuggestedCaseNumber);
 
         var similar = Assert.Single(result.SimilarCases, h => h.Id == past);
         Assert.Equal("Koszty Sylwestra Miejskiego 2024", similar.Title);
@@ -283,7 +283,7 @@ public class AiFeaturesTests(AiApiFactory factory) : IClassFixture<AiApiFactory>
         Assert.False(result.AiUsed);
         Assert.False(draft.GeneratedByAi);
         Assert.Equal("Administrator", draft.UpdatedBy);
-        Assert.StartsWith("Bydgoszcz, dnia 18 listopada 2026 r.\n\nZnak sprawy: BKS.1431.", draft.Content);
+        Assert.StartsWith("Bydgoszcz, dnia 18 listopada 2026 r.\n\nZnak sprawy: BKS.IV.1431.", draft.Content);
         Assert.Contains("\n\nJan Kowalski\njan.kowalski@example.com\n\n", draft.Content);
         Assert.Contains("Dotyczy: wniosku o udostępnienie informacji publicznej z dnia 16 listopada 2026 r.", draft.Content);
         Assert.Contains("Informacja przekazana przez: Biuro Kultury Bydgoskiej", draft.Content);
@@ -331,7 +331,7 @@ public class AiFeaturesTests(AiApiFactory factory) : IClassFixture<AiApiFactory>
         Assert.Contains("[dane zanonimizowane]", text);
         Assert.DoesNotContain("jan.kowalski@example.com", text);
         Assert.EndsWith(DraftExport.AnonymizationNotice, text);
-        Assert.Matches(@"^BKS-1431-\d+-2026-odpowiedz\.txt$", txt.Content.Headers.ContentDisposition!.FileNameStar);
+        Assert.Matches(@"^BKS-IV-1431-\d+-2026-odpowiedz\.txt$", txt.Content.Headers.ContentDisposition!.FileNameStar);
         Assert.StartsWith("text/plain", txt.Content.Headers.ContentType!.ToString());
 
         var docx = await client.GetAsync($"/api/requests/{id}/draft/export", Ct);

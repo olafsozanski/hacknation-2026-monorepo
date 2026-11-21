@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<InfoRequest> Requests => Set<InfoRequest>();
     public DbSet<RequestDepartment> RequestDepartments => Set<RequestDepartment>();
+    public DbSet<RequestEmbedding> RequestEmbeddings => Set<RequestEmbedding>();
     public DbSet<RequestDocument> RequestDocuments => Set<RequestDocument>();
     public DbSet<ResponseDraft> Drafts => Set<ResponseDraft>();
     public DbSet<Department> Departments => Set<Department>();

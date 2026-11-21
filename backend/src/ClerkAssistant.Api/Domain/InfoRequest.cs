@@ -12,6 +12,12 @@ public enum RequestStatus
     ResponseSent,
 }
 
+public enum ExtensionKind
+{
+    Query,
+    Clarification,
+}
+
 public enum ReplyChannel
 {
     Email,
@@ -36,6 +42,7 @@ public class InfoRequest
     public DateOnly DueOn { get; set; }
     public DateOnly? ExtendedDueOn { get; set; }
     public int? ExtensionDays { get; set; }
+    public ExtensionKind? ExtensionKind { get; set; }
     public string? ExtensionReason { get; set; }
     public DateOnly? RespondedOn { get; set; }
     public RequestStatus Status { get; set; }
@@ -44,8 +51,8 @@ public class InfoRequest
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
     public uint Version { get; set; }
-    public Vector? Embedding { get; set; }
     public NpgsqlTsVector SearchVector { get; set; } = null!;
+    public RequestEmbedding? Embedding { get; set; }
 
     public List<RequestDepartment> Departments { get; set; } = [];
     public List<RequestDocument> Documents { get; set; } = [];
@@ -53,6 +60,13 @@ public class InfoRequest
 
     public DateOnly EffectiveDueOn => ExtendedDueOn ?? DueOn;
     public bool IsClosed => Status == RequestStatus.ResponseSent;
+}
+
+public class RequestEmbedding
+{
+    public Guid RequestId { get; set; }
+    public required Vector Vector { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
 }
 
 public class RequestDepartment

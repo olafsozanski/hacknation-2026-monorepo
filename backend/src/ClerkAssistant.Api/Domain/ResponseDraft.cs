@@ -11,6 +11,14 @@ public enum RedactionCategory
     BankAccount,
     Nip,
     DateOfBirth,
+    FamilySituation,
+    Health,
+    Financial,
+    SpecialCategory,
+    CriminalRecord,
+    PropertyRecord,
+    VehicleRegistration,
+    ProtectedSecret,
     Other,
 }
 

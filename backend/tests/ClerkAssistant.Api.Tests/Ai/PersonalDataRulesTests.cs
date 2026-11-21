@@ -79,7 +79,7 @@ public class PersonalDataRulesTests
     [Theory]
     [InlineData("Numer sprawy 1234501234567890 w systemie")]
     [InlineData("Kwota 123 456 789 zł brutto")]
-    [InlineData("Znak sprawy BKS.1431.12.2026 z dnia 21.11.2026")]
+    [InlineData("Znak sprawy BKS.IV.1431.12.2026 z dnia 21.11.2026")]
     public void Ignores_numbers_that_are_not_phones(string text) =>
         Assert.DoesNotContain(PersonalDataRules.Detect(text), r => r.Category == RedactionCategory.Phone);
 

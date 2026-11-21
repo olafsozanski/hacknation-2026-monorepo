@@ -126,6 +126,11 @@ public static class RequestCommands
 
         db.ExpectVersion(request, body.Version, clock.Now);
         var changed = Apply(request, body, caseNumber);
+        if (changed.Contains(SubjectLabel) || changed.Contains(ContentLabel))
+        {
+            await db.RequestEmbeddings.Where(e => e.RequestId == id).ExecuteDeleteAsync(ct);
+        }
+
         if (changed.Count > 0)
         {
             audit.Record("request.updated", nameof(InfoRequest), id, AuditDetails.ChangedFields(changed));
@@ -223,6 +228,7 @@ public static class RequestCommands
         request.ExtensionDays = body.Days;
         request.ExtensionReason = body.Reason.Trim();
         request.Status = RequestStatus.Extended;
+        request.ExtensionKind = body.Kind;
         audit.Record("request.extended", nameof(InfoRequest), id,
             $"Nowy termin: {RequestLetters.ShortDate(extendedDueOn)} (+{body.Days} dni)");
         await db.SaveChangesAsync(ct);
@@ -244,6 +250,9 @@ public static class RequestCommands
         return (sequence, caseNumber);
     }
 
+    private const string SubjectLabel = "przedmiot";
+    private const string ContentLabel = "treść";
+
     private static List<string> Apply(InfoRequest request, UpdateRequestRequest body, string caseNumber)
     {
         var changed = new List<string>();
@@ -259,14 +268,10 @@ public static class RequestCommands
 
         var subject = body.Subject.Trim();
         var content = body.Content?.Trim() ?? "";
-        if (subject != request.Subject || content != request.Content)
-        {
-            request.Embedding = null;
-        }
 
         Set(request.CaseNumber, caseNumber, "znak sprawy", v => request.CaseNumber = v);
-        Set(request.Subject, subject, "przedmiot", v => request.Subject = v);
-        Set(request.Content, content, "treść", v => request.Content = v);
+        Set(request.Subject, subject, SubjectLabel, v => request.Subject = v);
+        Set(request.Content, content, ContentLabel, v => request.Content = v);
         Set(request.RequesterName, RequestRules.Clean(body.RequesterName), "wnioskodawca", v => request.RequesterName = v);
         Set(request.RequesterContact, RequestRules.Clean(body.RequesterContact), "dane kontaktowe", v => request.RequesterContact = v);
         Set(request.ReplyChannel, body.ReplyChannel, "sposób odpowiedzi", v => request.ReplyChannel = v);

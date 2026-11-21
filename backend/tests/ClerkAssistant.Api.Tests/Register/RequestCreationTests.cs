@@ -24,9 +24,9 @@ public class RequestCreationTests(ApiFactory factory) : IClassFixture<ApiFactory
         Assert.Equal(new DateOnly(2026, 11, 23), first.DueOn);
         Assert.Equal(new DateOnly(2027, 1, 7), first.LatestExtendedDueOn);
         Assert.Equal(2026, first.Year);
-        Assert.Equal($"BKS.1431.{first.SequenceNumber}.2026", first.CaseNumber);
+        Assert.Equal($"BKS.IV.1431.{first.SequenceNumber}.2026", first.CaseNumber);
         Assert.Equal(first.SequenceNumber + 1, second.SequenceNumber);
-        Assert.Equal($"BKS.1431.{second.SequenceNumber}.2026", second.CaseNumber);
+        Assert.Equal($"BKS.IV.1431.{second.SequenceNumber}.2026", second.CaseNumber);
         Assert.Equal(new DateOnly(2026, 12, 2), second.DueOn);
         Assert.Equal(RequestStatus.NoAction, first.Status);
         Assert.Equal(Urgency.OnTrack, first.Urgency);
@@ -69,12 +69,12 @@ public class RequestCreationTests(ApiFactory factory) : IClassFixture<ApiFactory
         factory.SetToday(Today);
         var client = await factory.CreateAuthenticatedClientAsync();
 
-        var id = await client.CreateRequestAsync(NewRequest("Wniosek z ręcznym znakiem", Today, caseNumber: "BKS.1431.900.2026"));
+        var id = await client.CreateRequestAsync(NewRequest("Wniosek z ręcznym znakiem", Today, caseNumber: "BKS.IV.1431.900.2026"));
         var duplicate = await client.PostAsJsonAsync("/api/requests",
-            NewRequest("Drugi wniosek z tym samym znakiem", Today, caseNumber: " BKS.1431.900.2026 "), ApiClient.Json, Ct);
+            NewRequest("Drugi wniosek z tym samym znakiem", Today, caseNumber: " BKS.IV.1431.900.2026 "), ApiClient.Json, Ct);
 
         var detail = await client.GetRequestAsync(id);
-        Assert.Equal("BKS.1431.900.2026", detail.CaseNumber);
+        Assert.Equal("BKS.IV.1431.900.2026", detail.CaseNumber);
         Assert.True(detail.SequenceNumber > 0);
         Assert.Contains("caseNumber", (await duplicate.ValidationErrorsAsync()).Keys);
     }

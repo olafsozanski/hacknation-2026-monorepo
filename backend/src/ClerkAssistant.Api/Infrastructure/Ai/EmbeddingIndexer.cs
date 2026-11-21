@@ -1,3 +1,4 @@
+using ClerkAssistant.Api.Domain;
 using ClerkAssistant.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -79,7 +80,7 @@ public sealed class EmbeddingIndexer(
     {
         var pending = await db.Requests
             .Where(r => r.Embedding == null)
-            .OrderBy(r => r.CreatedAt)
+            .OrderBy(r => r.UpdatedAt)
             .Select(r => new { r.Id, r.Subject, Content = r.Content.Substring(0, MaxEmbeddedTextLength) })
             .Take(BatchSize)
             .ToListAsync(ct);
@@ -94,13 +95,26 @@ public sealed class EmbeddingIndexer(
             return null;
         }
 
+        var existing = await db.RequestEmbeddings
+            .Where(e => pending.Select(p => p.Id).Contains(e.RequestId))
+            .Select(e => e.RequestId)
+            .ToListAsync(ct);
+        var now = DateTimeOffset.UtcNow;
         for (var i = 0; i < pending.Count; i++)
         {
-            var id = pending[i].Id;
-            var vector = vectors[i];
-            await db.Requests
-                .Where(r => r.Id == id && r.Embedding == null)
-                .ExecuteUpdateAsync(s => s.SetProperty(r => r.Embedding, vector), ct);
+            if (!existing.Contains(pending[i].Id))
+            {
+                db.RequestEmbeddings.Add(new RequestEmbedding { RequestId = pending[i].Id, Vector = vectors[i], CreatedAt = now });
+            }
+        }
+
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            db.ChangeTracker.Clear();
         }
 
         return pending.Count;

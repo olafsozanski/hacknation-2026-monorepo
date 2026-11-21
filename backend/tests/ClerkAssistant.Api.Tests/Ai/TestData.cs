@@ -31,7 +31,7 @@ public static class TestData
         {
             Year = data.ReceivedOn.Year,
             SequenceNumber = sequence,
-            CaseNumber = $"BKS.1431.{sequence}.{data.ReceivedOn.Year}",
+            CaseNumber = $"BKS.IV.1431.{sequence}.{data.ReceivedOn.Year}",
             Subject = data.Subject,
             Content = data.Content,
             RequesterName = data.RequesterName,

@@ -27,7 +27,7 @@ services:
       Seed__DemoPassword: ${DEMO_PASSWORD:-}
       Organization__Name: ${ORGANIZATION_NAME:-Urząd Miasta Bydgoszczy}
       Organization__UnitName: ${ORGANIZATION_UNIT:-Biuro Komunikacji Społecznej}
-      Organization__CaseNumberPrefix: ${CASE_NUMBER_PREFIX:-BKS.1431}
+      Organization__CaseNumberPrefix: ${CASE_NUMBER_PREFIX:-BKS.IV.1431}
       Ai__Provider: ${AI_PROVIDER:-OpenAI}
       Ai__Endpoint: ${AI_ENDPOINT:-}
       Ai__ApiKey: ${AI_API_KEY:-}

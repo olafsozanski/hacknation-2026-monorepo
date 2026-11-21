@@ -44,6 +44,7 @@ public static class RequestDetails
             request.EffectiveDueOn,
             request.ExtendedDueOn,
             request.ExtensionDays,
+            request.ExtensionKind,
             request.ExtensionReason,
             Deadlines.LatestExtendedDueDate(request.ReceivedOn),
             request.RespondedOn,

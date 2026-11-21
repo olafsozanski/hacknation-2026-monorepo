@@ -83,7 +83,7 @@ public static class SearchEndpoints
     {
         var request = await db.Requests
             .Where(r => r.Id == id)
-            .Select(r => new { r.Subject, r.Content, r.Embedding })
+            .Select(r => new { r.Subject, r.Content, Embedding = r.Embedding == null ? null : r.Embedding.Vector })
             .FirstOrDefaultAsync(ct);
         if (request is null)
         {

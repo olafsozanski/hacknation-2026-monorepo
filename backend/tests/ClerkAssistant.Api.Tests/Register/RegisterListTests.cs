@@ -36,7 +36,7 @@ public class RegisterListTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(new DateOnly(2025, 12, 29), carriedOver.EffectiveDueOn);
         Assert.Equal(Urgency.Overdue, carriedOver.Urgency);
         Assert.Equal(-10, carriedOver.DaysLeft);
-        Assert.Equal("BKS.1431.1.2025", carriedOver.CaseNumber);
+        Assert.Equal("BKS.IV.1431.1.2025", carriedOver.CaseNumber);
         Assert.Equal(new DateOnly(2026, 1, 8), current[3].RespondedOn);
         Assert.Equal(Urgency.Closed, current[3].Urgency);
     }

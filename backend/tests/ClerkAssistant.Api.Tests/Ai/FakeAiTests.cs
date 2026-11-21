@@ -100,7 +100,7 @@ public class FakeAiTests(FakeAiFactory factory) : IClassFixture<FakeAiFactory>
         Assert.Equal(
             [
                 ("Anna Nowak", RedactionCategory.PersonName, RedactionSource.Ai),
-                ("cukrzycę", RedactionCategory.Other, RedactionSource.Ai),
+                ("cukrzycę", RedactionCategory.Health, RedactionSource.Ai),
                 ("Anna Nowak", RedactionCategory.PersonName, RedactionSource.Ai),
                 ("501 234 567", RedactionCategory.Phone, RedactionSource.Rule),
             ],
@@ -194,7 +194,7 @@ public class FakeAiTests(FakeAiFactory factory) : IClassFixture<FakeAiFactory>
         Assert.True(result.Draft.GeneratedByAi);
         Assert.Empty(result.Warnings);
         var content = result.Draft.Content;
-        Assert.StartsWith("Bydgoszcz, dnia 18 listopada 2026 r.\n\nZnak sprawy: BKS.1431.", content);
+        Assert.StartsWith("Bydgoszcz, dnia 18 listopada 2026 r.\n\nZnak sprawy: BKS.IV.1431.", content);
         Assert.Contains("\n\nPiotr Zieliński\n\nDotyczy: wniosku o udostępnienie informacji publicznej z dnia 16 listopada 2026 r.\n\nW odpowiedzi na wniosek", content);
         Assert.Contains("Odpowiedź\n1. Koszt koncertu sylwestrowego wyniósł 450 000 zł.\n\nZ poważaniem\n\n[podpis osoby upoważnionej]", content);
         Assert.DoesNotContain("**", content);

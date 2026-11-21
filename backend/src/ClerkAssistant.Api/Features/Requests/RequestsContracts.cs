@@ -15,6 +15,7 @@ public record RequestListItem(
     DateOnly DueOn,
     DateOnly EffectiveDueOn,
     int? ExtensionDays,
+    ExtensionKind? ExtensionKind,
     DateOnly? RespondedOn,
     RequestStatus Status,
     Urgency Urgency,
@@ -62,6 +63,7 @@ public record RequestDetail(
     DateOnly EffectiveDueOn,
     DateOnly? ExtendedDueOn,
     int? ExtensionDays,
+    ExtensionKind? ExtensionKind,
     string? ExtensionReason,
     DateOnly LatestExtendedDueOn,
     DateOnly? RespondedOn,
@@ -106,7 +108,8 @@ public record ChangeStatusRequest(RequestStatus Status, DateOnly? RespondedOn, u
 public record ExtendDeadlineRequest(
     [property: Range(1, 62)] int Days,
     [property: Required, MaxLength(2000)] string Reason,
-    uint Version);
+    uint Version,
+    ExtensionKind Kind = ExtensionKind.Query);
 
 public record ExtensionResult(DateOnly ExtendedDueOn, string NoticeText);
 

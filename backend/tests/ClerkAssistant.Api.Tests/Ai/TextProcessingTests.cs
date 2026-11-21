@@ -111,7 +111,7 @@ public class TextProcessingTests
     [Fact]
     public void Docx_export_is_a_valid_a4_document_in_polish()
     {
-        const string text = "Bydgoszcz, dnia 21 listopada 2026 r.\n\nZnak sprawy: BKS.1431.1.2026\n\nJan Kowalski\nul. Długa 5\n\nTreść & <znaczniki> \u0001 odpowiedzi.";
+        const string text = "Bydgoszcz, dnia 21 listopada 2026 r.\n\nZnak sprawy: BKS.IV.1431.1.2026\n\nJan Kowalski\nul. Długa 5\n\nTreść & <znaczniki> \u0001 odpowiedzi.";
 
         var bytes = DraftExport.ToDocx(text, "Odpowiedź");
 

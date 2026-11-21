@@ -103,7 +103,7 @@ public class RedactionSetTests
         Assert.Equal("Treść.", DraftExport.PrepareText("Treść.", []));
 
     [Theory]
-    [InlineData("BKS.1431.12.2026", "docx", "BKS-1431-12-2026-odpowiedz.docx")]
+    [InlineData("BKS.IV.1431.12.2026", "docx", "BKS-IV-1431-12-2026-odpowiedz.docx")]
     [InlineData("BKS/1431 Ł.7", "txt", "BKS-1431---7-odpowiedz.txt")]
     public void Export_file_name_is_derived_from_case_number(string caseNumber, string extension, string expected) =>
         Assert.Equal(expected, DraftExport.FileName(caseNumber, extension));

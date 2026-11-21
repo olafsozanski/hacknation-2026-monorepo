@@ -262,10 +262,6 @@ namespace ClerkAssistant.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("date")
                         .HasColumnName("due_on");
 
-                    b.Property<Vector>("Embedding")
-                        .HasColumnType("vector(1024)")
-                        .HasColumnName("embedding");
-
                     b.Property<DateOnly?>("ExtendedDueOn")
                         .HasColumnType("date")
                         .HasColumnName("extended_due_on");
@@ -273,6 +269,11 @@ namespace ClerkAssistant.Api.Infrastructure.Persistence.Migrations
                     b.Property<int?>("ExtensionDays")
                         .HasColumnType("integer")
                         .HasColumnName("extension_days");
+
+                    b.Property<string>("ExtensionKind")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("extension_kind");
 
                     b.Property<string>("ExtensionReason")
                         .HasMaxLength(2000)
@@ -350,12 +351,6 @@ namespace ClerkAssistant.Api.Infrastructure.Persistence.Migrations
                     b.HasIndex("CaseNumber")
                         .IsUnique()
                         .HasDatabaseName("ix_requests_case_number");
-
-                    b.HasIndex("Embedding")
-                        .HasDatabaseName("ix_requests_embedding");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Embedding"), "hnsw");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Embedding"), new[] { "vector_cosine_ops" });
 
                     b.HasIndex("ReceivedOn")
                         .HasDatabaseName("ix_requests_received_on");
@@ -549,6 +544,33 @@ namespace ClerkAssistant.Api.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_request_documents_request_id");
 
                     b.ToTable("request_documents", (string)null);
+                });
+
+            modelBuilder.Entity("ClerkAssistant.Api.Domain.RequestEmbedding", b =>
+                {
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("request_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Vector>("Vector")
+                        .IsRequired()
+                        .HasColumnType("vector(1024)")
+                        .HasColumnName("vector");
+
+                    b.HasKey("RequestId")
+                        .HasName("pk_request_embeddings");
+
+                    b.HasIndex("Vector")
+                        .HasDatabaseName("ix_request_embeddings_vector");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Vector"), "hnsw");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Vector"), new[] { "vector_cosine_ops" });
+
+                    b.ToTable("request_embeddings", (string)null);
                 });
 
             modelBuilder.Entity("ClerkAssistant.Api.Domain.ResponseDraft", b =>
@@ -918,6 +940,16 @@ namespace ClerkAssistant.Api.Infrastructure.Persistence.Migrations
                     b.Navigation("File");
                 });
 
+            modelBuilder.Entity("ClerkAssistant.Api.Domain.RequestEmbedding", b =>
+                {
+                    b.HasOne("ClerkAssistant.Api.Domain.InfoRequest", null)
+                        .WithOne("Embedding")
+                        .HasForeignKey("ClerkAssistant.Api.Domain.RequestEmbedding", "RequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_request_embeddings_requests_request_id");
+                });
+
             modelBuilder.Entity("ClerkAssistant.Api.Domain.ResponseDraft", b =>
                 {
                     b.HasOne("ClerkAssistant.Api.Domain.InfoRequest", null)
@@ -992,6 +1024,8 @@ namespace ClerkAssistant.Api.Infrastructure.Persistence.Migrations
                     b.Navigation("Documents");
 
                     b.Navigation("Draft");
+
+                    b.Navigation("Embedding");
                 });
 
             modelBuilder.Entity("ClerkAssistant.Api.Domain.KnowledgeDocument", b =>
