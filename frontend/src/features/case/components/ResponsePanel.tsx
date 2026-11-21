@@ -104,7 +104,7 @@ export function ResponsePanel({ request }: { request: RequestDetail }) {
               </Button>
             )}
             {request.status === 'ResponsePrepared' && (
-              <Button variant="outline" colorPalette="green" onClick={() => setConfirmSent(true)}>
+              <Button variant="outline" onClick={() => setConfirmSent(true)}>
                 <Send size={16} aria-hidden /> Oznacz jako wysłaną
               </Button>
             )}

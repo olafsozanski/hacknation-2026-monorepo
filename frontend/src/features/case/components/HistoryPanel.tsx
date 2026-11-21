@@ -1,6 +1,7 @@
-import { Button, Text, Timeline } from '@chakra-ui/react'
+import { Text, Timeline } from '@chakra-ui/react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import { LinkButton } from '@/components/common/LinkButton'
 import { Panel } from '@/components/common/Panel'
 import { formatDateTime } from '@/lib/dates'
 import { auditActionLabels } from '@/lib/labels'
@@ -46,9 +47,9 @@ export function HistoryPanel({ requestId }: { requestId: string }) {
             ))}
           </Timeline.Root>
           {items.length > pageSize && (
-            <Button size="sm" variant="plain" color="brand.fg" px="0" onClick={() => setShowAll((s) => !s)}>
+            <LinkButton onClick={() => setShowAll((s) => !s)}>
               {showAll ? 'Pokaż mniej' : `Pokaż wszystkie (${items.length})`}
-            </Button>
+            </LinkButton>
           )}
         </>
       )}

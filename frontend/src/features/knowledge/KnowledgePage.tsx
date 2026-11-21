@@ -265,7 +265,7 @@ export function KnowledgePage() {
                     <Flex gap="1" justify="flex-end">
                       {doc.fileName && (
                         <IconButton
-                          size="sm"
+                          size="xs"
                           variant="ghost"
                           aria-label={`Pobierz ${doc.title}`}
                           onClick={() => downloadFile(`/api/knowledge/${doc.id}/content`, doc.fileName!).catch((e) => notifyError(e))}
@@ -273,7 +273,7 @@ export function KnowledgePage() {
                           <Download size={16} aria-hidden />
                         </IconButton>
                       )}
-                      <IconButton size="sm" variant="ghost" colorPalette="red" aria-label={`Usuń ${doc.title}`} onClick={() => setDeleting(doc)}>
+                      <IconButton size="xs" variant="ghost" colorPalette="red" aria-label={`Usuń ${doc.title}`} onClick={() => setDeleting(doc)}>
                         <Trash2 size={16} aria-hidden />
                       </IconButton>
                     </Flex>

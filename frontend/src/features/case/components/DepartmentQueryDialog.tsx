@@ -72,12 +72,12 @@ export function DepartmentQueryDialog({ request, open, onClose }: { request: Req
             <Dialog.Footer flexWrap="wrap">
               {memo.data && (
                 <>
-                  <CopyButton text={memo.data.subject} label="Kopiuj temat" size="sm" />
-                  <CopyButton text={memo.data.body} label="Kopiuj treść" size="sm" />
+                  <CopyButton text={memo.data.subject} label="Kopiuj temat" />
+                  <CopyButton text={memo.data.body} label="Kopiuj treść" />
                 </>
               )}
               {pending.length > 0 && (
-                <Button size="sm" onClick={markAllSent} loading={update.isPending}>
+                <Button onClick={markAllSent} loading={update.isPending}>
                   <Send size={14} aria-hidden /> Oznacz jako wysłane ({pending.length})
                 </Button>
               )}

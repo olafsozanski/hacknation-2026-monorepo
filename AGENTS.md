@@ -72,5 +72,16 @@ for the reference implementation:
 - All HTTP goes through `src/api/client.ts` (adds the CSRF header, maps ProblemDetails to `ApiError`).
 - Chakra UI v3 only (no v2 APIs). Use semantic tokens from `src/theme` instead of raw colours.
   The Chakra MCP server (`.mcp.json`) documents v3 components.
+- Buttons (one system everywhere; buttons shown side by side always share size):
+  - size `md` (default): page header actions, form footers, dialog footers, a panel's main call to action;
+    `sm`: actions in panel headers, toolbars and inline forms; `xs`: per-row actions in tables and lists;
+    `lg`: only next to `lg` inputs (login form, archive search).
+  - variant `solid` for the single primary action of a region, `outline` for secondary, `ghost` for low-emphasis,
+    `LinkButton` (`src/components/common/LinkButton.tsx`) for link-like actions ("Pokaż więcej").
+    No colour palettes on buttons except `red` for destructive actions.
+- Dates: always `DateInput` (`src/components/common/DateInput.tsx`, Chakra DatePicker, Polish locale, `dd.mm.rrrr`),
+  never `<input type="date">`; pass `portalled={false}` inside dialogs.
+- Segmented controls (`SegmentGroup`), inputs, selects and checkboxes get their look from the theme
+  (`src/theme/index.ts`) — don't restyle them per screen.
 - Accessibility is a requirement (WCAG 2.1 AA): labelled form fields, visible focus, keyboard access,
   status never conveyed by colour alone, `aria-live` for async results, contrast >= 4.5:1.

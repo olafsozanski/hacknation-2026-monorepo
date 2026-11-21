@@ -70,7 +70,13 @@ export function EditRequestDialog({ request, open, onClose }: { request: Request
                     <Alert.Title>{errors.form}</Alert.Title>
                   </Alert.Root>
                 )}
-                <RequestFormFields values={values} onChange={(c) => setValues((v) => ({ ...v, ...c }))} errors={errors} users={users} />
+                <RequestFormFields
+                  values={values}
+                  onChange={(c) => setValues((v) => ({ ...v, ...c }))}
+                  errors={errors}
+                  users={users}
+                  portalled={false}
+                />
                 <Field.Root>
                   <Field.Label>Treść wniosku</Field.Label>
                   <Textarea rows={8} value={content} onChange={(e) => setContent(e.target.value)} fontSize="sm" />

@@ -91,7 +91,15 @@ export function AuditPage() {
           <EmptyHint title="Brak zdarzeń" description="Zmień filtry, aby zobaczyć inne wpisy." />
         ) : (
           <>
-            <Table.ScrollArea borderWidth="1px" borderColor="border" borderRadius="md" bg="bg.panel">
+            <Table.ScrollArea
+              borderWidth="1px"
+              borderColor="border"
+              borderRadius="md"
+              bg="bg.panel"
+              tabIndex={0}
+              role="region"
+              aria-label="Wpisy dziennika zdarzeń"
+            >
               <Table.Root size="sm">
                 <Table.Caption srOnly>Dziennik zdarzeń</Table.Caption>
                 <Table.Header>
@@ -118,7 +126,9 @@ export function AuditPage() {
                           (auditActionLabels[entry.action] ?? entry.action)
                         )}
                       </Table.Cell>
-                      <Table.Cell color="fg.muted">{entry.details ?? '—'}</Table.Cell>
+                      <Table.Cell color="fg.muted" whiteSpace="normal" minW="64">
+                        {entry.details ?? '—'}
+                      </Table.Cell>
                     </Table.Row>
                   ))}
                 </Table.Body>

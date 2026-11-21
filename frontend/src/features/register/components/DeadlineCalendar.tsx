@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link as RouterLink } from 'react-router'
 import type { RequestListItem, Urgency } from '@/api/types'
+import { LinkButton } from '@/components/common/LinkButton'
 import { formatMonth, parseIsoDate, plural, toIsoDate, todayIso } from '@/lib/dates'
 import { deadlineLabel } from '@/lib/labels'
 
@@ -194,9 +195,9 @@ export function DeadlineCalendar({ items, onShowDay }: DeadlineCalendarProps) {
                         })}
                         {dayItems.length > maxChips && (
                           <li>
-                            <Button size="2xs" variant="plain" color="brand.fg" px="1" onClick={() => onShowDay(iso)}>
+                            <LinkButton size="xs" minH="6" onClick={() => onShowDay(iso)}>
                               {`+${dayItems.length - maxChips} więcej`}
-                            </Button>
+                            </LinkButton>
                           </li>
                         )}
                       </chakra.ul>

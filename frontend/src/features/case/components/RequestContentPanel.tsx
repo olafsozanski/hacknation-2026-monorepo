@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Download } from 'lucide-react'
 import { useState } from 'react'
 import { downloadFile } from '@/api/client'
 import type { RequestDetail } from '@/api/types'
+import { LinkButton } from '@/components/common/LinkButton'
 import { Panel } from '@/components/common/Panel'
 import { notifyError } from '@/components/ui/toaster'
 
@@ -44,18 +45,14 @@ export function RequestContentPanel({ request }: { request: RequestDetail }) {
           </Box>
           {long && (
             <Flex mt="2">
-              <Button
-                size="sm"
-                variant="plain"
-                color="brand.fg"
-                px="0"
+              <LinkButton
                 aria-expanded={expanded}
                 aria-controls={`request-content-${request.id}`}
                 onClick={() => setExpanded((e) => !e)}
               >
                 {expanded ? <ChevronUp size={16} aria-hidden /> : <ChevronDown size={16} aria-hidden />}
                 {expanded ? 'Zwiń treść' : 'Pokaż całą treść'}
-              </Button>
+              </LinkButton>
             </Flex>
           )}
         </>

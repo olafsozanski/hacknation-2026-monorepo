@@ -214,7 +214,7 @@ export function ReviewStep({ intake, onRestart }: ReviewStepProps) {
             <Button variant="outline" onClick={onRestart}>
               Zacznij od nowa
             </Button>
-            <Button type="submit" size="lg" loading={create.isPending}>
+            <Button type="submit" loading={create.isPending}>
               Zarejestruj wniosek
             </Button>
           </Flex>

@@ -234,7 +234,7 @@ function Editor({ onRegenerated, requestId, caseNumber, status, requestVersion, 
               </Portal>
             </Menu.Root>
             {status !== 'ResponsePrepared' && status !== 'ResponseSent' && (
-              <Button variant="outline" colorPalette="green" onClick={markPrepared} loading={changeStatus.isPending}>
+              <Button variant="outline" onClick={markPrepared} loading={changeStatus.isPending}>
                 <CheckCircle2 size={16} aria-hidden /> Odpowiedź gotowa
               </Button>
             )}

@@ -1,5 +1,5 @@
 import { createSystem, defaultConfig, defineConfig } from '@chakra-ui/react'
-import { checkboxAnatomy, nativeSelectAnatomy } from '@chakra-ui/react/anatomy'
+import { checkboxAnatomy, nativeSelectAnatomy, segmentGroupAnatomy } from '@chakra-ui/react/anatomy'
 
 const hc = (base: string, highContrast: string) => ({ value: { base, _light: base, _highContrast: highContrast } })
 
@@ -150,6 +150,28 @@ const config = defineConfig({
       nativeSelect: {
         slots: nativeSelectAnatomy.keys(),
         variants: { variant: { outline: { field: { borderColor: 'border.emphasized' } } } },
+      },
+      segmentGroup: {
+        slots: segmentGroupAnatomy.keys(),
+        base: {
+          root: {
+            '--segment-radius': 'radii.l2',
+            bg: 'bg.panel',
+            boxShadow: 'inset 0 0 0 1px var(--chakra-colors-border-emphasized)',
+          },
+          item: {
+            fontWeight: 'semibold',
+            color: 'fg',
+            _before: { display: 'none' },
+            _checked: { color: 'brand.contrast' },
+            '&:not([data-state=checked]):hover': { bg: 'brand.subtle', color: 'brand.fg' },
+            '&[data-state=checked][data-ssr]': { shadow: 'none', bg: 'brand.solid' },
+          },
+          indicator: {
+            bg: 'brand.solid',
+            shadow: 'none',
+          },
+        },
       },
       checkbox: {
         slots: checkboxAnatomy.keys(),

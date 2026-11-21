@@ -1,6 +1,8 @@
 import { Badge, Field, Grid, GridItem, Input, NativeSelect, Textarea } from '@chakra-ui/react'
 import type { ReactNode } from 'react'
 import type { ReplyChannel, UserSummary } from '@/api/types'
+import { DateInput } from '@/components/common/DateInput'
+import { todayIso } from '@/lib/dates'
 import { replyChannelLabels } from '@/lib/labels'
 
 export type RequestFormValues = {
@@ -23,6 +25,7 @@ type Props = {
   users: UserSummary[]
   aiFields?: ReadonlySet<RequestFormField>
   hints?: Partial<Record<RequestFormField, ReactNode>>
+  portalled?: boolean
 }
 
 function AiMark() {
@@ -33,7 +36,8 @@ function AiMark() {
   )
 }
 
-export function RequestFormFields({ values, onChange, errors, users, aiFields, hints = {} }: Props) {
+export function RequestFormFields({ values, onChange, errors, users, aiFields, hints = {}, portalled = true }: Props) {
+  const today = todayIso()
   const ai = (field: RequestFormField) => (aiFields?.has(field) ? <AiMark /> : null)
   return (
     <Grid templateColumns={{ base: '1fr', md: 'repeat(2, minmax(0, 1fr))' }} gap="4">
@@ -58,7 +62,7 @@ export function RequestFormFields({ values, onChange, errors, users, aiFields, h
         <Field.Label>
           Data wpływu <Field.RequiredIndicator />
         </Field.Label>
-        <Input type="date" value={values.receivedOn} onChange={(e) => onChange({ receivedOn: e.target.value })} />
+        <DateInput value={values.receivedOn} max={today} onChange={(receivedOn) => onChange({ receivedOn })} portalled={portalled} />
         {hints.receivedOn && <Field.HelperText>{hints.receivedOn}</Field.HelperText>}
         <Field.ErrorText>{errors.receivedOn}</Field.ErrorText>
       </Field.Root>
@@ -66,7 +70,7 @@ export function RequestFormFields({ values, onChange, errors, users, aiFields, h
         <Field.Label>
           Termin odpowiedzi <Field.RequiredIndicator />
         </Field.Label>
-        <Input type="date" value={values.dueOn} onChange={(e) => onChange({ dueOn: e.target.value })} />
+        <DateInput value={values.dueOn} min={values.receivedOn || undefined} onChange={(dueOn) => onChange({ dueOn })} portalled={portalled} />
         {hints.dueOn && <Field.HelperText>{hints.dueOn}</Field.HelperText>}
         <Field.ErrorText>{errors.dueOn}</Field.ErrorText>
       </Field.Root>

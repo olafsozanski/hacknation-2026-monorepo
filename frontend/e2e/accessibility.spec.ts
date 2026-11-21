@@ -41,6 +41,14 @@ for (const { path, heading } of pages) {
   })
 }
 
+test('registration form with an open date picker meets WCAG 2.1 AA', async ({ page }) => {
+  await page.goto('/wnioski/nowy')
+  await page.getByRole('button', { name: /Wypełnij formularz ręcznie/ }).click()
+  await page.getByRole('button', { name: 'Otwórz kalendarz' }).first().click()
+  await expect(page.getByRole('button', { name: /Wybrana data|Dziś/ }).first()).toBeVisible()
+  await expectNoAccessibilityViolations(page)
+})
+
 test('high contrast mode meets WCAG 2.1 AA', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Wersja kontrastowa' }).click()

@@ -52,7 +52,7 @@ export function SideNav({ onNavigate }: { onNavigate?: () => void }) {
   const user = useCurrentUser()
   return (
     <Stack gap="6" p="4">
-      <Button asChild size="lg" w="full">
+      <Button asChild w="full">
         <RouterLink to="/wnioski/nowy" onClick={onNavigate}>
           <FilePlus2 size={18} aria-hidden /> Zarejestruj wniosek
         </RouterLink>

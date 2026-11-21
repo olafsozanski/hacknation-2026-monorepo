@@ -1,6 +1,7 @@
 import { Alert, Box, Button, Card, Field, FileUpload, Flex, Heading, Icon, Separator, Stack, Text, Textarea } from '@chakra-ui/react'
 import { ClipboardPaste, FileUp, PencilLine } from 'lucide-react'
 import { useState } from 'react'
+import { LinkButton } from '@/components/common/LinkButton'
 
 const accept = [
   'application/pdf',
@@ -111,9 +112,9 @@ export function SourceStep({ busy, error, onFile, onText, onManual }: SourceStep
             <Button variant="outline" onClick={() => onText(pasted.trim())} disabled={busy || pasted.trim().length < 20}>
               <ClipboardPaste size={16} aria-hidden /> Analizuj treść
             </Button>
-            <Button variant="plain" color="brand.fg" textDecoration="underline" onClick={onManual} disabled={busy} px="0">
+            <LinkButton size="md" onClick={onManual} disabled={busy}>
               <PencilLine size={16} aria-hidden /> Wypełnij formularz ręcznie
-            </Button>
+            </LinkButton>
           </Flex>
         </Card.Body>
       </Card.Root>
