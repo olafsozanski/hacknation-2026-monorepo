@@ -11,13 +11,10 @@ namespace ClerkAssistant.Api.Features.Drafts;
 public static class DraftsEndpoints
 {
     public static IServiceCollection AddDraftsFeature(this IServiceCollection services) =>
-        services
-            .AddAnonymizationFeature()
-            .AddScoped<DraftComposer>();
+        services.AddScoped<DraftComposer>();
 
     public static void MapDraftsEndpoints(this RouteGroupBuilder api)
     {
-        api.MapAnonymizationEndpoints();
         var group = api.MapGroup("/requests/{id:guid}/draft");
         group.MapGet("/", Get);
         group.MapPut("/", Save);
