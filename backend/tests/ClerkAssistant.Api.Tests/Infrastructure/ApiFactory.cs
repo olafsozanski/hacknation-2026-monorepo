@@ -9,7 +9,7 @@ namespace ClerkAssistant.Api.Tests.Infrastructure;
 public class ApiFactory : WebApplicationFactory<Program>
 {
     public const string AdminUserName = "admin";
-    public const string AdminPassword = "Admin12345678";
+    public const string AdminPassword = "Test-Admin-2026-Pass";
 
     private readonly string _database = $"udip_test_{Guid.NewGuid():N}";
 

@@ -1,6 +1,10 @@
+using System.Net;
+using System.Security.Claims;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.RateLimiting;
 using ClerkAssistant.Api.Domain;
 using ClerkAssistant.Api.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -31,8 +35,10 @@ public static class SecurityExtensions
             services.Configure<ForwardedHeadersOptions>(o =>
             {
                 o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-                o.KnownIPNetworks.Clear();
-                o.KnownProxies.Clear();
+                foreach (var proxy in options.KnownProxies)
+                {
+                    o.KnownProxies.Add(IPAddress.Parse(proxy));
+                }
             });
         }
 
@@ -43,9 +49,14 @@ public static class SecurityExtensions
         });
         services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = MaxUploadBytes);
 
-        services.AddDataProtection()
+        var dataProtection = services.AddDataProtection()
             .SetApplicationName("ClerkAssistant")
             .PersistKeysToDbContext<AppDbContext>();
+        if (!string.IsNullOrWhiteSpace(options.DataProtectionCertificatePath))
+        {
+            dataProtection.ProtectKeysWithCertificate(X509CertificateLoader.LoadPkcs12FromFile(
+                options.DataProtectionCertificatePath, options.DataProtectionCertificatePassword));
+        }
 
         services.AddIdentityCore<AppUser>(o =>
             {
@@ -63,16 +74,41 @@ public static class SecurityExtensions
             .AddEntityFrameworkStores<AppDbContext>()
             .AddSignInManager();
 
-        services.Configure<SecurityStampValidatorOptions>(o => o.ValidationInterval = TimeSpan.FromMinutes(1));
+        services.Configure<SecurityStampValidatorOptions>(o =>
+        {
+            o.ValidationInterval = TimeSpan.FromMinutes(1);
+            o.OnRefreshingPrincipal = context =>
+            {
+                if (SessionLifetime.Find(context.CurrentPrincipal) is { } authTime && context.NewPrincipal?.Identity is ClaimsIdentity identity)
+                {
+                    identity.AddClaim(authTime);
+                }
+
+                return Task.CompletedTask;
+            };
+        });
         services.AddAuthentication(IdentityConstants.ApplicationScheme).AddIdentityCookies();
         services.ConfigureApplicationCookie(o =>
         {
-            o.Cookie.Name = "udip.session";
+            o.Cookie.Name = requireHttps ? "__Host-udip.session" : "udip.session";
             o.Cookie.HttpOnly = true;
             o.Cookie.SameSite = SameSiteMode.Strict;
             o.Cookie.SecurePolicy = cookieSecurity;
             o.ExpireTimeSpan = TimeSpan.FromHours(8);
             o.SlidingExpiration = true;
+            var validateSecurityStamp = o.Events.OnValidatePrincipal;
+            o.Events.OnValidatePrincipal = async ctx =>
+            {
+                var now = ctx.HttpContext.RequestServices.GetRequiredService<TimeProvider>().GetUtcNow();
+                if (ctx.Principal is not null && SessionLifetime.IsExpired(ctx.Principal, now, TimeSpan.FromHours(options.MaxSessionHours)))
+                {
+                    ctx.RejectPrincipal();
+                    await ctx.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+                    return;
+                }
+
+                await validateSecurityStamp(ctx);
+            };
             o.Events.OnRedirectToLogin = ctx =>
             {
                 ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -92,7 +128,7 @@ public static class SecurityExtensions
         services.AddAntiforgery(o =>
         {
             o.HeaderName = AntiforgeryHeader;
-            o.Cookie.Name = "udip.af";
+            o.Cookie.Name = requireHttps ? "__Host-udip.af" : "udip.af";
             o.Cookie.HttpOnly = true;
             o.Cookie.SameSite = SameSiteMode.Strict;
             o.Cookie.SecurePolicy = cookieSecurity;
@@ -128,6 +164,17 @@ public static class SecurityExtensions
         if (settings.RequireHttps)
         {
             app.UseHsts();
+            app.Use(async (context, next) =>
+            {
+                if (!context.Request.IsHttps && !context.Request.Path.StartsWithSegments("/health"))
+                {
+                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    await context.Response.WriteAsync("Wymagane jest połączenie HTTPS.");
+                    return;
+                }
+
+                await next();
+            });
         }
 
         app.Use(async (context, next) =>

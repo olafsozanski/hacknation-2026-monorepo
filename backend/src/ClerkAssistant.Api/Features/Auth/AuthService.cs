@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using ClerkAssistant.Api.Domain;
 using ClerkAssistant.Api.Infrastructure.Common;
+using ClerkAssistant.Api.Infrastructure.Persistence;
+using ClerkAssistant.Api.Infrastructure.Security;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Identity;
 
@@ -12,9 +14,16 @@ public sealed class AuthService(
     SignInManager<AppUser> signIn,
     IAntiforgery antiforgery,
     CurrentUser current,
+    AuditLog audit,
+    AppDbContext db,
+    AppClock clock,
     ILogger<AuthService> logger)
 {
     private const string InvalidCredentials = "Nieprawidłowa nazwa użytkownika lub hasło.";
+    private const string AuthEntity = "Authentication";
+
+    private static readonly AppUser TimingDummy = new() { FullName = "", Initials = "" };
+    private static readonly Lazy<string> TimingDummyHash = new(() => new PasswordHasher<AppUser>().HashPassword(TimingDummy, Guid.NewGuid().ToString()));
 
     private HttpContext Http => accessor.HttpContext ?? throw new InvalidOperationException("No HTTP context.");
 
@@ -26,9 +35,12 @@ public sealed class AuthService(
 
     public async Task<SessionResponse> LoginAsync(LoginRequest request)
     {
-        var user = await users.FindByNameAsync(request.UserName.Trim());
+        var userName = request.UserName.Trim();
+        var user = await users.FindByNameAsync(userName);
         if (user is null || !user.IsActive)
         {
+            users.PasswordHasher.VerifyHashedPassword(TimingDummy, TimingDummyHash.Value, request.Password);
+            await RecordAsync(user?.Id, userName, "auth.login-failed", user is null ? "nieznany użytkownik" : "konto nieaktywne");
             throw new AuthenticationFailedException(InvalidCredentials);
         }
 
@@ -36,6 +48,7 @@ public sealed class AuthService(
         if (result.IsLockedOut)
         {
             logger.LogWarning("Account {UserId} locked out after failed sign-in attempts", user.Id);
+            await RecordAsync(user.Id, userName, "auth.locked-out", null);
             throw new AuthenticationFailedException(
                 "Konto zostało czasowo zablokowane po kilku nieudanych próbach logowania. Spróbuj ponownie za 15 minut.",
                 lockedOut: true);
@@ -43,16 +56,24 @@ public sealed class AuthService(
 
         if (!result.Succeeded)
         {
+            await RecordAsync(user.Id, userName, "auth.login-failed", "błędne hasło");
             throw new AuthenticationFailedException(InvalidCredentials);
         }
 
-        await signIn.SignInAsync(user, isPersistent: false);
+        await signIn.SignInWithClaimsAsync(user, isPersistent: false, [SessionLifetime.CreateClaim(clock.Now)]);
         Http.User = await signIn.CreateUserPrincipalAsync(user);
+        await RecordAsync(user.Id, userName, "auth.login", null);
         return new SessionResponse(await ToSessionUserAsync(user), IssueToken());
     }
 
     public async Task<SessionResponse> LogoutAsync()
     {
+        if (Http.User.Identity?.IsAuthenticated == true && await users.GetUserAsync(Http.User) is { } user)
+        {
+            await users.UpdateSecurityStampAsync(user);
+            await RecordAsync(user.Id, user.UserName ?? "", "auth.logout", null);
+        }
+
         await signIn.SignOutAsync();
         Http.User = new ClaimsPrincipal(new ClaimsIdentity());
         return new SessionResponse(null, IssueToken());
@@ -68,7 +89,15 @@ public sealed class AuthService(
             throw new ValidationException(IdentityErrors.ToValidationErrors(result, "newPassword"));
         }
 
-        await signIn.RefreshSignInAsync(user);
+        var authTime = SessionLifetime.Find(Http.User) ?? SessionLifetime.CreateClaim(clock.Now);
+        await signIn.SignInWithClaimsAsync(user, isPersistent: false, [new Claim(authTime.Type, authTime.Value, authTime.ValueType)]);
+        await RecordAsync(user.Id, user.UserName ?? "", "auth.password-changed", null);
+    }
+
+    private async Task RecordAsync(Guid? userId, string userName, string action, string? details)
+    {
+        audit.RecordFor(userId, userName, action, AuthEntity, userId, details);
+        await db.SaveChangesAsync();
     }
 
     private async Task<SessionUser> ToSessionUserAsync(AppUser user) =>

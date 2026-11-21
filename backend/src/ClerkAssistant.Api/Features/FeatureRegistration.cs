@@ -1,4 +1,5 @@
 using ClerkAssistant.Api.Features.Anonymization;
+using ClerkAssistant.Api.Features.Audit;
 using ClerkAssistant.Api.Features.Auth;
 using ClerkAssistant.Api.Features.Departments;
 using ClerkAssistant.Api.Features.Documents;
@@ -20,6 +21,7 @@ public static class FeatureRegistration
         services
             .AddAuthFeature()
             .AddUsersFeature()
+            .AddAuditFeature()
             .AddRequestsFeature()
             .AddDocumentsFeature()
             .AddDepartmentsFeature()
@@ -38,6 +40,7 @@ public static class FeatureRegistration
 
         api.MapAuthEndpoints();
         api.MapUsersEndpoints();
+        api.MapAuditEndpoints();
         api.MapPlatformEndpoints();
         api.MapRequestsEndpoints();
         api.MapDocumentsEndpoints();

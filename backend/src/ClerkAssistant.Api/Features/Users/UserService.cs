@@ -57,6 +57,7 @@ public sealed class UserService(
         }
 
         var deactivated = user.IsActive && !request.IsActive;
+        var reactivated = !user.IsActive && request.IsActive;
         user.FullName = request.FullName.Trim();
         user.Initials = request.Initials.Trim().ToUpperInvariant();
         user.IsActive = request.IsActive;
@@ -77,7 +78,21 @@ public sealed class UserService(
             await users.UpdateSecurityStampAsync(user);
         }
 
-        audit.Record(deactivated ? "user.deactivated" : "user.updated", nameof(AppUser), user.Id, user.UserName);
+        var changes = new (bool Applies, string Text)[]
+            {
+                (request.IsAdmin && !wasAdmin, "nadano uprawnienia administratora"),
+                (!request.IsAdmin && wasAdmin, "odebrano uprawnienia administratora"),
+                (deactivated, "dezaktywowano konto"),
+                (reactivated, "aktywowano konto"),
+            }
+            .Where(c => c.Applies)
+            .Select(c => c.Text)
+            .ToList();
+        audit.Record(
+            deactivated ? "user.deactivated" : request.IsAdmin != wasAdmin ? "user.role-changed" : "user.updated",
+            nameof(AppUser),
+            user.Id,
+            changes.Count > 0 ? $"{user.UserName}: {string.Join(", ", changes)}" : user.UserName);
         await db.SaveChangesAsync(ct);
     }
 

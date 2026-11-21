@@ -34,6 +34,7 @@
 
   <ItemGroup>
     <Content Update="Seed/**" CopyToOutputDirectory="PreserveNewest" />
+    <Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
 </Project>

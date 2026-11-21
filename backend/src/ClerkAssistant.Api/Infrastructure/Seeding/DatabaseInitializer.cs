@@ -10,6 +10,8 @@ namespace ClerkAssistant.Api.Infrastructure.Seeding;
 
 public static class DatabaseInitializer
 {
+    private static readonly HashSet<string> KnownWeakPasswords = ["ChangeMe12345", "Admin12345678", "Urzednik12345"];
+
     private sealed record DepartmentSeed(string Symbol, string Name, DepartmentKind Kind, string Scope, string? Email);
 
     public static async Task InitializeDatabaseAsync(this WebApplication app)
@@ -23,7 +25,7 @@ public static class DatabaseInitializer
         await db.Database.MigrateAsync();
         await SeedRolesAsync(services.GetRequiredService<RoleManager<IdentityRole<Guid>>>());
         await SeedDepartmentsAsync(db, app.Environment.ContentRootPath);
-        await SeedAdminAsync(services.GetRequiredService<UserManager<AppUser>>(), options, logger);
+        await SeedAdminAsync(services.GetRequiredService<UserManager<AppUser>>(), options, app.Environment, logger);
 
         if (options.DemoData)
         {
@@ -66,7 +68,7 @@ public static class DatabaseInitializer
         await db.SaveChangesAsync();
     }
 
-    private static async Task SeedAdminAsync(UserManager<AppUser> users, SeedOptions options, ILogger logger)
+    private static async Task SeedAdminAsync(UserManager<AppUser> users, SeedOptions options, IHostEnvironment environment, ILogger logger)
     {
         if (await users.Users.AnyAsync())
         {
@@ -77,6 +79,12 @@ public static class DatabaseInitializer
         {
             logger.LogWarning("No users exist and Seed:AdminPassword is not set. Set it to create the first administrator.");
             return;
+        }
+
+        if (!environment.IsDevelopment() && KnownWeakPasswords.Contains(options.AdminPassword))
+        {
+            throw new InvalidOperationException(
+                "Seed:AdminPassword uses an example value from the documentation. Choose a unique password for the administrator.");
         }
 
         var admin = new AppUser
