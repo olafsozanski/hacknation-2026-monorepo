@@ -15,6 +15,7 @@ public sealed record NewRequest(string Subject, string Content, DateOnly Receive
     public RequestStatus Status { get; init; } = RequestStatus.NoAction;
     public string? RequesterName { get; init; }
     public string? RequesterContact { get; init; }
+    public ReplyChannel ReplyChannel { get; init; } = ReplyChannel.Email;
     public Assignment[] Departments { get; init; } = [];
 }
 
@@ -36,6 +37,7 @@ public static class TestData
             Content = data.Content,
             RequesterName = data.RequesterName,
             RequesterContact = data.RequesterContact,
+            ReplyChannel = data.ReplyChannel,
             ReceivedOn = data.ReceivedOn,
             DueOn = Deadlines.InitialDueDate(data.ReceivedOn),
             Status = data.Status,

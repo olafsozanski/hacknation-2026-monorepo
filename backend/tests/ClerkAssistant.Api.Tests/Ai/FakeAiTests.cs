@@ -15,7 +15,7 @@ namespace ClerkAssistant.Api.Tests.Ai;
 public class FakeAiTests(FakeAiFactory factory) : IClassFixture<FakeAiFactory>
 {
     private const string RoutingPromptMarker = "Wskaż komórki organizacyjne";
-    private const string DetectionPromptMarker = "dane osobowe osób fizycznych";
+    private const string DetectionPromptMarker = "podlegają anonimizacji";
     private const string IntakePromptMarker = "Analizujesz pismo";
     private const string DraftPromptMarker = "przygotowujesz projekt odpowiedzi";
 
@@ -87,7 +87,7 @@ public class FakeAiTests(FakeAiFactory factory) : IClassFixture<FakeAiFactory>
               """
             : "{}";
         var id = await factory.AddRequestAsync(new NewRequest("Dodatek mieszkaniowy", "Treść", Today));
-        const string content = "Pani Anna Nowak choruje na cukrzycę. Odpowiedź otrzymuje Anna Nowak, tel. 501 234 567.";
+        const string content = "Anna Nowak choruje na cukrzycę. Odpowiedź otrzymuje Anna Nowak, tel. 501 234 567.";
         var client = await factory.ClientAsync();
 
         var response = await client.PostAsJsonAsync(
@@ -106,6 +106,10 @@ public class FakeAiTests(FakeAiFactory factory) : IClassFixture<FakeAiFactory>
             ],
             result.Redactions.Select(r => (r.Text, r.Category, r.Source)));
         Assert.All(result.Redactions, r => Assert.Equal(r.Text, content.Substring(r.Start, r.Length)));
+
+        var prompt = factory.Chat.Calls.Last(c => c.SystemPrompt.Contains(DetectionPromptMarker)).SystemPrompt;
+        Assert.All(Enum.GetNames<RedactionCategory>(), name => Assert.Contains($"- {name} — ", prompt));
+        Assert.Contains("funkcjonariuszy publicznych", prompt);
     }
 
     [Fact]
@@ -165,13 +169,14 @@ public class FakeAiTests(FakeAiFactory factory) : IClassFixture<FakeAiFactory>
     }
 
     [Fact]
-    public async Task Draft_generation_uses_model_body_inside_a_deterministic_letter()
+    public async Task Draft_generation_puts_the_model_body_into_the_office_letter_layout()
     {
         factory.Chat.Responder = call => call.SystemPrompt switch
         {
-            var s when s.Contains(DraftPromptMarker) =>
-                "**Znak sprawy:** X\n\nW odpowiedzi na wniosek z dnia 16 listopada 2026 r. uprzejmie informuję, że:\n\n" +
-                "## Odpowiedź\n1. Koszt koncertu sylwestrowego wyniósł 450 000 zł.\n\nZ poważaniem\nDyrektor",
+            var s when s.Contains(DraftPromptMarker) => """
+                {"addressee":"Man","addresseeConfidence":0.4,
+                 "body":"Szanowny Panie,\n\nW odpowiedzi na wystosowany przez Pana wniosek **uprzejmie** informuję, że:\n\n## Ad 1\nKoszt koncertu sylwestrowego wyniósł 450 000 zł.\n\nŁączę wyrazy szacunku,\nDyrektor"}
+                """,
             var s when s.Contains(DetectionPromptMarker) => """{"items":[]}""",
             _ => "{}",
         };
@@ -183,6 +188,8 @@ public class FakeAiTests(FakeAiFactory factory) : IClassFixture<FakeAiFactory>
             "Koszt koncertu sylwestrowego", "Ile kosztował koncert sylwestrowy?", new DateOnly(2026, 11, 16))
         {
             RequesterName = "Piotr Zieliński",
+            RequesterContact = "ul. Polna 3, 86-300 Grudziądz",
+            ReplyChannel = ReplyChannel.Post,
         });
         await factory.AddDepartmentReplyAsync(id, "BKB", "Koszt koncertu sylwestrowego wyniósł 450 000 zł.");
 
@@ -194,17 +201,47 @@ public class FakeAiTests(FakeAiFactory factory) : IClassFixture<FakeAiFactory>
         Assert.True(result.Draft.GeneratedByAi);
         Assert.Empty(result.Warnings);
         var content = result.Draft.Content;
-        Assert.StartsWith("Bydgoszcz, dnia 18 listopada 2026 r.\n\nZnak sprawy: BKS.IV.1431.", content);
-        Assert.Contains("\n\nPiotr Zieliński\n\nDotyczy: wniosku o udostępnienie informacji publicznej z dnia 16 listopada 2026 r.\n\nW odpowiedzi na wniosek", content);
-        Assert.Contains("Odpowiedź\n1. Koszt koncertu sylwestrowego wyniósł 450 000 zł.\n\nZ poważaniem\n\n[podpis osoby upoważnionej]", content);
+        Assert.StartsWith("URZĄD MIASTA BYDGOSZCZY\nBiuro Komunikacji Społecznej\n\nBydgoszcz, dnia 18 listopada 2026 r.\n\nBKS.IV.1431.", content);
+        Assert.Contains(
+            "\n\nPiotr Zieliński\nul. Polna 3\n86-300 Grudziądz\n\nSzanowny Panie,\n\nw odpowiedzi na wystosowany przez Pana wniosek uprzejmie informuję, że:" +
+            "\n\nAd 1\nKoszt koncertu sylwestrowego wyniósł 450 000 zł.\n\nŁączę wyrazy szacunku,\nBiuro Komunikacji Społecznej\nUrząd Miasta Bydgoszczy\n\nul. Jezuicka 1",
+            content);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(content, "Szanowny Panie,"));
         Assert.DoesNotContain("**", content);
         Assert.DoesNotContain("Dyrektor", content);
         Assert.Contains(result.Draft.Redactions, r => r is { Text: "Piotr Zieliński", Source: RedactionSource.Rule });
 
-        var prompt = factory.Chat.Calls.Last(c => c.SystemPrompt.Contains(DraftPromptMarker)).UserPrompt;
-        Assert.Contains("<odpowiedz_wydzialu nazwa=\"Biuro Kultury Bydgoskiej\">", prompt);
-        Assert.Contains("<kontekst_prawny>", prompt);
-        Assert.DoesNotContain("Piotr Zieliński", prompt);
+        var call = factory.Chat.Calls.Last(c => c.SystemPrompt.Contains(DraftPromptMarker));
+        Assert.Contains("tj. Biuro Kultury Bydgoskiej Urzędu Miasta Bydgoszczy, uprzejmie informuję, że", call.SystemPrompt);
+        Assert.Contains("art. 4 ust. 3", call.SystemPrompt);
+        Assert.Contains(DraftStyleExamples.NoData.Trim(), call.SystemPrompt);
+        Assert.Contains("<odpowiedz_wydzialu nazwa=\"Biuro Kultury Bydgoskiej\">", call.UserPrompt);
+        Assert.Contains("<kontekst_prawny>", call.UserPrompt);
+        Assert.DoesNotContain("Piotr Zieliński", call.UserPrompt);
+    }
+
+    [Theory]
+    [InlineData(0.9, "Szanowna Pani,", "przez Panią")]
+    [InlineData(0.5, "Szanowny Panie,", "przez Pana")]
+    public async Task Model_overrides_the_guessed_salutation_only_when_confident(
+        double confidence, string salutation, string byYou)
+    {
+        factory.Chat.Responder = call => call.SystemPrompt.Contains(DraftPromptMarker)
+            ? $$"""
+              {"addressee":"Woman","addresseeConfidence":{{confidence.ToString(System.Globalization.CultureInfo.InvariantCulture)}},
+               "body":"w odpowiedzi na wystosowany przez Panią wniosek uprzejmie informuję, że koszt wyniósł 100 zł."}
+              """
+            : """{"items":[]}""";
+        var id = await factory.AddRequestAsync(new NewRequest(
+            "Koszt festynu", "Chciałabym poznać koszt festynu. Kamila Jan", Today) { RequesterName = "Kamil Jan" });
+        await factory.AddDepartmentReplyAsync(id, "BKB", "Koszt festynu wyniósł 100 zł.");
+        var client = await factory.ClientAsync();
+
+        var response = await client.PostAsync($"/api/requests/{id}/draft/generate", null, Ct);
+
+        response.EnsureSuccessStatusCode();
+        var content = (await response.Content.ReadFromJsonAsync<GenerateDraftResult>(ApiClient.Json, Ct))!.Draft.Content;
+        Assert.Contains($"\n\n{salutation}\n\nw odpowiedzi na wystosowany {byYou} wniosek uprzejmie informuję", content);
     }
 
     [Fact]

@@ -3,6 +3,7 @@ using ClerkAssistant.Api.Features.Drafts;
 using ClerkAssistant.Api.Features.Intake;
 using ClerkAssistant.Api.Features.Knowledge;
 using ClerkAssistant.Api.Features.Search;
+using ClerkAssistant.Api.Infrastructure.Letters;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
@@ -109,9 +110,13 @@ public class TextProcessingTests
     }
 
     [Fact]
-    public void Docx_export_is_a_valid_a4_document_in_polish()
+    public void Docx_export_is_a_valid_a4_document_in_polish_with_letter_layout()
     {
-        const string text = "Bydgoszcz, dnia 21 listopada 2026 r.\n\nZnak sprawy: BKS.IV.1431.1.2026\n\nJan Kowalski\nul. Długa 5\n\nTreść & <znaczniki> \u0001 odpowiedzi.";
+        const string text =
+            "URZĄD MIASTA BYDGOSZCZY\nBiuro Komunikacji Społecznej\n\nBydgoszcz, dnia 21 listopada 2026 r.\n\nBKS.IV.1431.1.2026\n\n" +
+            "Jan Kowalski\nul. Długa 5\n\nTreść & <znaczniki> \u0001 odpowiedzi.\n\n" +
+            "Łączę wyrazy szacunku,\nBiuro Komunikacji Społecznej\nUrząd Miasta Bydgoszczy\n\n" +
+            "ul. Jezuicka 1, 85-102 Bydgoszcz\ntel. (52) 58 58 365\ne-mail: bks@um.bydgoszcz.pl";
 
         var bytes = DraftExport.ToDocx(text, "Odpowiedź");
 
@@ -119,11 +124,13 @@ public class TextProcessingTests
         using var document = WordprocessingDocument.Open(stream, false);
         var body = document.MainDocumentPart!.Document!.Body!;
         var paragraphs = body.Elements<Paragraph>().ToList();
-        Assert.Equal(4, paragraphs.Count);
-        Assert.Equal("Bydgoszcz, dnia 21 listopada 2026 r.", paragraphs[0].InnerText);
-        Assert.Equal(JustificationValues.Right, paragraphs[0].ParagraphProperties?.Justification?.Val?.Value);
-        Assert.Single(paragraphs[2].Descendants<Break>());
-        Assert.Equal("Treść & <znaczniki>  odpowiedzi.", paragraphs[3].InnerText);
+        Assert.Equal(7, paragraphs.Count);
+        Assert.Equal("URZĄD MIASTA BYDGOSZCZYBiuro Komunikacji Społecznej", paragraphs[0].InnerText);
+        Assert.Equal(JustificationValues.Center, paragraphs[0].ParagraphProperties?.Justification?.Val?.Value);
+        Assert.Single(paragraphs[3].Descendants<Break>());
+        Assert.Equal("Treść & <znaczniki>  odpowiedzi.", paragraphs[4].InnerText);
+        Assert.Equal("5103", paragraphs[5].ParagraphProperties?.Indentation?.Left?.Value);
+        Assert.Equal("16", paragraphs[6].Descendants<RunProperties>().Single().FontSize!.Val!.Value);
 
         var section = body.GetFirstChild<SectionProperties>()!;
         Assert.Equal(11906u, section.GetFirstChild<PageSize>()!.Width!.Value);
@@ -134,14 +141,38 @@ public class TextProcessingTests
     }
 
     [Fact]
-    public void Model_body_is_stripped_of_markdown_header_and_closing()
+    public void Model_body_is_stripped_of_markdown_header_salutation_and_closing()
     {
-        const string model = "Znak sprawy: X\n\nW odpowiedzi na wniosek **uprzejmie** informuję, że:\n\n## Punkt 1\n* koszt wyniósł 100 zł\n\n\n\nZ poważaniem\nJan";
+        const string model =
+            "BKS.IV.1431.1.2026\n\nSzanowny Panie,\n\nW odpowiedzi na wystosowany przez Pana wniosek **uprzejmie** informuję, że:\n\n" +
+            "## Ad 1\n* koszt wyniósł 100 zł\n\n\n\nŁączę wyrazy szacunku,\nJan";
 
         var body = DraftComposer.CleanModelBody(model);
 
-        Assert.Equal("W odpowiedzi na wniosek uprzejmie informuję, że:\n\nPunkt 1\n- koszt wyniósł 100 zł", body);
+        Assert.Equal("w odpowiedzi na wystosowany przez Pana wniosek uprzejmie informuję, że:\n\nAd 1\n- koszt wyniósł 100 zł", body);
     }
+
+    [Theory]
+    [InlineData(Addressee.Woman, "w odpowiedzi na wystosowany przez Panią wniosek")]
+    [InlineData(Addressee.Organisation, "w odpowiedzi na wystosowany przez Państwa wniosek")]
+    public void Addressee_form_in_the_opening_follows_the_salutation(Addressee addressee, string expected) =>
+        Assert.StartsWith(expected, DraftComposer.MatchAddresseeForm("w odpowiedzi na wystosowany przez Pana wniosek o …", addressee));
+
+    [Theory]
+    [InlineData("Wydział nie posiada danych. Właściwym dysponentem danych jest Zarząd Dróg Miejskich, ul. Toruńska 174a.", true)]
+    [InlineData("W tej sprawie należy zwrócić się do Wojewódzkiego Konserwatora Zabytków.", true)]
+    [InlineData("Urząd nie prowadzi statystyk, które umożliwiłyby udzielenie odpowiedzi.", false)]
+    [InlineData("Łączny koszt wyniósł 100 zł.", false)]
+    public void Not_holder_replies_are_recognised(string reply, bool expected) =>
+        Assert.Equal(expected, DraftComposer.IsNotHolderReply(reply));
+
+    [Theory]
+    [InlineData("Wniosek - Jan Kowalski.docx", "docx", "Wniosek-Jan-Kowalski-zanonimizowany.docx")]
+    [InlineData("..\\..\\tajne/pismo.pdf", "txt", "pismo-zanonimizowany.txt")]
+    [InlineData(null, "docx", "dokument-zanonimizowany.docx")]
+    [InlineData("???.txt", "txt", "dokument-zanonimizowany.txt")]
+    public void Anonymized_file_name_is_sanitised(string? original, string extension, string expected) =>
+        Assert.Equal(expected, DraftExport.AnonymizedFileName(original, extension));
 
     [Fact]
     public void Intake_heuristics_extract_basic_fields()

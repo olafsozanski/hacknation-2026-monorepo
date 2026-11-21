@@ -9,6 +9,7 @@ public sealed class EmbeddingIndexer(
     IServiceScopeFactory scopes,
     AiGateway ai,
     IOptions<AiOptions> options,
+    TimeProvider time,
     ILogger<EmbeddingIndexer> logger) : BackgroundService
 {
     public const int MaxEmbeddedTextLength = 8000;
@@ -95,11 +96,12 @@ public sealed class EmbeddingIndexer(
             return null;
         }
 
+        var ids = pending.Select(p => p.Id).ToList();
         var existing = await db.RequestEmbeddings
-            .Where(e => pending.Select(p => p.Id).Contains(e.RequestId))
+            .Where(e => ids.Contains(e.RequestId))
             .Select(e => e.RequestId)
             .ToListAsync(ct);
-        var now = DateTimeOffset.UtcNow;
+        var now = time.GetUtcNow();
         for (var i = 0; i < pending.Count; i++)
         {
             if (!existing.Contains(pending[i].Id))
@@ -112,9 +114,10 @@ public sealed class EmbeddingIndexer(
         {
             await db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex)
         {
-            db.ChangeTracker.Clear();
+            logger.LogWarning("Saving request embeddings failed ({ErrorType}); they will be retried", ex.GetType().Name);
+            return null;
         }
 
         return pending.Count;

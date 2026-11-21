@@ -1,5 +1,10 @@
 using ClerkAssistant.Api.Domain;
 using ClerkAssistant.Api.Features.Anonymization;
+using ClerkAssistant.Api.Infrastructure.Ai;
+using ClerkAssistant.Api.Infrastructure.Common;
+using ClerkAssistant.Api.Infrastructure.Letters;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace ClerkAssistant.Api.Tests.Ai;
 
@@ -107,7 +112,9 @@ public class PersonalDataRulesTests
 
     [Theory]
     [InlineData("Jan Kowalski, ur. 12.03.1985 r., zamieszkały", "12.03.1985")]
-    [InlineData("urodzona dnia 5 maja 1990 w Toruniu", "5 maja 1990")]
+    [InlineData("urodzona dnia 5 maja 1990 w Toruniu", "5 maja 1990 w Toruniu")]
+    [InlineData("Jan Kowalski, ur. 12.03.1980 r. w Toruniu, zam.", "12.03.1980 r. w Toruniu")]
+    [InlineData("urodzony w Nowym Targu dnia 5 maja 1990 r.", "Nowym Targu dnia 5 maja 1990")]
     [InlineData("data urodzenia: 1985-03-12", "1985-03-12")]
     public void Detects_dates_of_birth_only_in_context(string text, string date) =>
         Assert.Contains(PersonalDataRules.Detect(text), r => r.Category == RedactionCategory.DateOfBirth && r.Text == date);
@@ -129,5 +136,78 @@ public class PersonalDataRulesTests
         {
             Assert.True(found[i - 1].Start + found[i - 1].Length <= found[i].Start);
         }
+    }
+
+    [Theory]
+    [InlineData("Nieruchomość ma założoną księgę wieczystą nr BY1B/00012345/6.", "BY1B/00012345/6")]
+    [InlineData("KW: WA4M / 00123456 / 2 prowadzona przez sąd", "WA4M / 00123456 / 2")]
+    public void Detects_land_register_numbers(string text, string number) =>
+        Assert.Contains(PersonalDataRules.Detect(text), r => r.Category == RedactionCategory.PropertyRecord && r.Text == number);
+
+    [Theory]
+    [InlineData("Właściciel działki nr 123/4 obręb 0045 złożył wniosek.", "123/4")]
+    [InlineData("dotyczy dz. nr 12/3 i 12/5 w Fordonie", "12/3 i 12/5")]
+    [InlineData("działki ewidencyjnej nr 45 położonej przy", "45")]
+    public void Detects_parcel_numbers_in_context(string text, string parcel) =>
+        Assert.Contains(PersonalDataRules.Detect(text), r => r.Category == RedactionCategory.PropertyRecord && r.Text == parcel);
+
+    [Theory]
+    [InlineData("Pojazd marki Opel o nr rej. CB 12345 parkował", "CB 12345")]
+    [InlineData("samochód o numerze rejestracyjnym CBY1234A", "CBY1234A")]
+    [InlineData("tablice rejestracyjne: CT 9876A", "CT 9876A")]
+    public void Detects_vehicle_plates_in_context(string text, string plate) =>
+        Assert.Contains(PersonalDataRules.Detect(text), r => r.Category == RedactionCategory.VehicleRegistration && r.Text == plate);
+
+    [Theory]
+    [InlineData("Uchwała obejmuje obszar 123/4 oraz CB 12345 w tabeli.")]
+    [InlineData("Ustawa z dnia 21 sierpnia 1997 r. (Dz. U. z 2024 r. poz. 1145) w pkt 12/3.")]
+    public void Ignores_parcels_and_plates_without_context(string text) =>
+        Assert.DoesNotContain(PersonalDataRules.Detect(text), r =>
+            r.Category is RedactionCategory.PropertyRecord or RedactionCategory.VehicleRegistration);
+
+    [Fact]
+    public void Detects_private_person_names_in_context_and_all_their_occurrences()
+    {
+        const string text =
+            "Pan Jan Kowalski złożył wniosek. Pismo przekazano Pana Prezydenta Rafała Bruskiego do wiadomości. " +
+            "Odpowiedź otrzyma Jan Kowalski.\nWnioskodawczyni: Ewa Nowak-Wiśniewska\n\nZ poważaniem\nAnna Zielińska\n\n" +
+            "Łączę wyrazy szacunku,\nBiuro Komunikacji Społecznej\nUrząd Miasta Bydgoszczy";
+
+        var names = PersonalDataRules.Detect(text)
+            .Where(r => r.Category == RedactionCategory.PersonName)
+            .Select(r => r.Text)
+            .ToList();
+
+        Assert.Equal(["Jan Kowalski", "Jan Kowalski", "Ewa Nowak-Wiśniewska", "Anna Zielińska"], names);
+    }
+
+    [Theory]
+    [InlineData("Dziękuję za odpowiedź.\nPozdrawiam | Ewa Góra", "Ewa Góra", RedactionCategory.PersonName)]
+    [InlineData("bulwaru?--\n\nZ wyrazami szacunku\n\nE. Góra", "E. Góra", RedactionCategory.PersonName)]
+    [InlineData("Jerzy Dociekliwy\nul. Pod lasem 4\n\nSzanowny Panie,", "ul. Pod lasem 4", RedactionCategory.Address)]
+    [InlineData("Jerzy Dociekliwy\nul. Pod lasem 4\n\nSzanowny Panie,", "Jerzy Dociekliwy", RedactionCategory.PersonName)]
+    public void Detects_signatures_and_addressee_blocks_from_real_letters(string text, string value, RedactionCategory category) =>
+        Assert.Contains(PersonalDataRules.Detect(text), r => r.Category == category && r.Text == value);
+
+    [Fact]
+    public async Task Office_contact_data_and_public_sector_addresses_are_not_flagged()
+    {
+        var organization = new OrganizationOptions();
+        var detector = new RedactionDetector(
+            new AiGateway(new AiClients(Options.Create(new AiOptions())), NullLogger<AiGateway>.Instance),
+            new PublicContactFilter(Options.Create(organization)));
+        var content = string.Join("\n\n",
+            "Kontakt z wnioskodawcą: jan.kowalski@gmail.com, tel. 501 234 567, ul. Długa 5, 85-001 Bydgoszcz.",
+            "Dane kontaktowe podmiotu: bydgoszcz@torun.wkz.gov.pl, zarzad@zdmikp.bydgoszcz.pl, bip@um.bydgoszcz.pl.",
+            "85-102 Bydgoszcz, ul. Jezuicka 1\ntel.: (52) 58-58-365, fax.: (52) 58-58-623\ne-mail: bks@um.bydgoszcz.pl,www.bydgoszcz.pl",
+            LetterLayout.Footer(organization));
+
+        var outcome = await detector.DetectAsync(content, null, TestContext.Current.CancellationToken);
+
+        Assert.Equal(
+            ["jan.kowalski@gmail.com", "501 234 567", "ul. Długa 5, 85-001 Bydgoszcz"],
+            outcome.Suggestions.Select(r => r.Text));
+        Assert.False(outcome.AiUsed);
+        Assert.Empty(outcome.Warnings);
     }
 }
