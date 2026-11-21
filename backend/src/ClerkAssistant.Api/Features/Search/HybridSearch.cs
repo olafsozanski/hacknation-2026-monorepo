@@ -17,6 +17,7 @@ public sealed record SearchRequest(string Text)
     public bool IncludeRequests { get; init; } = true;
     public bool IncludeKnowledge { get; init; } = true;
     public DateOnly? RequestsReceivedSince { get; init; }
+    public DateOnly? PreferReceivedSince { get; init; }
     public IReadOnlyCollection<KnowledgeKind>? KnowledgeKinds { get; init; }
     public Guid? ExcludeRequestId { get; init; }
     public int Limit { get; init; } = 20;
@@ -33,6 +34,7 @@ public sealed class HybridSearch(AppDbContext db, AiGateway ai)
     private const double MinTrigramSimilarity = 0.3;
     private const double MaxCosineDistance = 0.75;
     private const int SnippetSourceLength = 4000;
+    private const double OlderCaseFactor = 0.9;
     private static readonly TimeZoneInfo Warsaw = TimeZoneInfo.FindSystemTimeZoneById("Europe/Warsaw");
 
     public async Task<QueryEmbedding> EmbedAsync(string text, CancellationToken ct)
@@ -69,7 +71,7 @@ public sealed class HybridSearch(AppDbContext db, AiGateway ai)
     {
         var plan = QueryPlan.From(request.Text);
         var embedding = request.Embedding ?? await EmbedAsync(request.Text, ct);
-        var fusion = new RankFusion();
+        var fusion = new RankFusion(request.PreferReceivedSince);
         var take = Math.Max(request.Limit * 3, 30);
         if (request.IncludeRequests)
         {
@@ -104,7 +106,7 @@ public sealed class HybridSearch(AppDbContext db, AiGateway ai)
                 .Where(r => r.SearchVector.Matches(EF.Functions.ToTsQuery(Config, tokenQuery)))
                 .OrderByDescending(r => r.SearchVector.RankCoverDensity(EF.Functions.ToTsQuery(Config, tokenQuery)))
                 .ThenByDescending(r => r.ReceivedOn)
-                .Select(r => new RankedItem(r.Id, null))
+                .Select(r => new RankedItem(r.Id, null, r.ReceivedOn))
                 .Take(take)
                 .ToListAsync(ct));
         }
@@ -116,15 +118,15 @@ public sealed class HybridSearch(AppDbContext db, AiGateway ai)
                 .Where(r => r.SearchVector.Matches(EF.Functions.WebSearchToTsQuery(Config, text)))
                 .OrderByDescending(r => r.SearchVector.RankCoverDensity(EF.Functions.WebSearchToTsQuery(Config, text)))
                 .ThenByDescending(r => r.ReceivedOn)
-                .Select(r => new RankedItem(r.Id, null))
+                .Select(r => new RankedItem(r.Id, null, r.ReceivedOn))
                 .Take(take)
                 .ToListAsync(ct));
 
             fusion.Add(SearchHitKind.Request, await requests
-                .Select(r => new { r.Id, Similarity = EF.Functions.TrigramsWordSimilarity(text, r.Subject) })
+                .Select(r => new { r.Id, r.ReceivedOn, Similarity = EF.Functions.TrigramsWordSimilarity(text, r.Subject) })
                 .Where(x => x.Similarity >= MinTrigramSimilarity)
                 .OrderByDescending(x => x.Similarity)
-                .Select(x => new RankedItem(x.Id, null))
+                .Select(x => new RankedItem(x.Id, null, x.ReceivedOn))
                 .Take(take)
                 .ToListAsync(ct));
         }
@@ -133,10 +135,10 @@ public sealed class HybridSearch(AppDbContext db, AiGateway ai)
         {
             fusion.Add(SearchHitKind.Request, await requests
                 .Where(r => r.Embedding != null)
-                .Select(r => new { r.Id, Distance = r.Embedding!.Vector.CosineDistance(vector) })
+                .Select(r => new { r.Id, r.ReceivedOn, Distance = r.Embedding!.Vector.CosineDistance(vector) })
                 .Where(x => x.Distance <= MaxCosineDistance)
                 .OrderBy(x => x.Distance)
-                .Select(x => new RankedItem(x.Id, null))
+                .Select(x => new RankedItem(x.Id, null, x.ReceivedOn))
                 .Take(take)
                 .ToListAsync(ct));
         }
@@ -158,7 +160,7 @@ public sealed class HybridSearch(AppDbContext db, AiGateway ai)
             fusion.Add(SearchHitKind.Knowledge, BestChunkPerDocument(await chunks
                 .Where(c => c.SearchVector.Matches(EF.Functions.ToTsQuery(Config, tokenQuery)))
                 .OrderByDescending(c => c.SearchVector.RankCoverDensity(EF.Functions.ToTsQuery(Config, tokenQuery)))
-                .Select(c => new RankedItem(c.DocumentId, c.Id))
+                .Select(c => new RankedItem(c.DocumentId, c.Id, null))
                 .Take(chunkTake)
                 .ToListAsync(ct)));
         }
@@ -169,7 +171,7 @@ public sealed class HybridSearch(AppDbContext db, AiGateway ai)
             fusion.Add(SearchHitKind.Knowledge, BestChunkPerDocument(await chunks
                 .Where(c => c.SearchVector.Matches(EF.Functions.WebSearchToTsQuery(Config, text)))
                 .OrderByDescending(c => c.SearchVector.RankCoverDensity(EF.Functions.WebSearchToTsQuery(Config, text)))
-                .Select(c => new RankedItem(c.DocumentId, c.Id))
+                .Select(c => new RankedItem(c.DocumentId, c.Id, null))
                 .Take(chunkTake)
                 .ToListAsync(ct)));
         }
@@ -181,7 +183,7 @@ public sealed class HybridSearch(AppDbContext db, AiGateway ai)
                 .Select(c => new { c.Id, c.DocumentId, Distance = c.Embedding!.CosineDistance(vector) })
                 .Where(x => x.Distance <= MaxCosineDistance)
                 .OrderBy(x => x.Distance)
-                .Select(x => new RankedItem(x.DocumentId, x.Id))
+                .Select(x => new RankedItem(x.DocumentId, x.Id, null))
                 .Take(chunkTake)
                 .ToListAsync(ct)));
         }
@@ -268,7 +270,7 @@ public sealed class HybridSearch(AppDbContext db, AiGateway ai)
     private static List<RankedItem> BestChunkPerDocument(List<RankedItem> chunks) =>
         chunks.DistinctBy(c => c.Id).ToList();
 
-    private sealed record RankedItem(Guid Id, Guid? ChunkId);
+    private sealed record RankedItem(Guid Id, Guid? ChunkId, DateOnly? Date);
 
     private sealed record FusedHit(SearchHitKind Kind, Guid Id, Guid? ChunkId, double Score);
 
@@ -295,7 +297,7 @@ public sealed class HybridSearch(AppDbContext db, AiGateway ai)
         }
     }
 
-    private sealed class RankFusion
+    private sealed class RankFusion(DateOnly? preferSince)
     {
         private const int K = 60;
         private readonly Dictionary<(SearchHitKind, Guid), Entry> _entries = [];
@@ -315,7 +317,7 @@ public sealed class HybridSearch(AppDbContext db, AiGateway ai)
                 var contribution = 1.0 / (K + rank + 1);
                 if (!_entries.TryGetValue((kind, item.Id), out var entry))
                 {
-                    entry = new Entry(kind, item.Id);
+                    entry = new Entry(kind, item.Id, item.Date);
                     _entries[(kind, item.Id)] = entry;
                 }
 
@@ -337,13 +339,15 @@ public sealed class HybridSearch(AppDbContext db, AiGateway ai)
         private double Normalize(Entry entry)
         {
             var best = _lists[entry.Kind] / (double)(K + 1);
-            return Math.Round(Math.Min(1.0, entry.Score / best), 3);
+            var recency = entry.Date < preferSince ? OlderCaseFactor : 1.0;
+            return Math.Round(Math.Min(1.0, entry.Score / best) * recency, 3);
         }
 
-        private sealed class Entry(SearchHitKind kind, Guid id)
+        private sealed class Entry(SearchHitKind kind, Guid id, DateOnly? date)
         {
             public SearchHitKind Kind { get; } = kind;
             public Guid Id { get; } = id;
+            public DateOnly? Date { get; } = date;
             public double Score { get; set; }
             public Guid? BestChunkId { get; set; }
             public double BestChunkContribution { get; set; }
