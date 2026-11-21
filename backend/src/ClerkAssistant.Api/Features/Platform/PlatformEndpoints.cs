@@ -15,6 +15,7 @@ public static partial class PlatformMapper
     [MapProperty(nameof(OrganizationOptions.Name), nameof(SystemInfo.OrganizationName))]
     public static partial SystemInfo ToSystemInfo(this OrganizationOptions organization, AiInfo ai);
 
+    [MapProperty(nameof(AiOptions.UsesLocalEndpoint), nameof(AiInfo.IsLocal))]
     public static partial AiInfo ToAiInfo(this AiOptions options, bool enabled);
 }
 

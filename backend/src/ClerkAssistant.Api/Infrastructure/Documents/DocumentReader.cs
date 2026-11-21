@@ -33,8 +33,13 @@ public sealed class DocumentReader
 {
     private const int MaxPdfPages = 500;
     private const int MaxZipEntries = 2000;
-    private const long MaxUncompressedBytes = 200L * 1024 * 1024;
+    private const long MaxUncompressedBytes = 50L * 1024 * 1024;
+    private const long CompressionRatioCheckThreshold = 1024 * 1024;
+    private const int MaxCompressionRatio = 100;
     private const int MaxTextLength = 500_000;
+    private static readonly TimeSpan ParseTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan QueueTimeout = TimeSpan.FromSeconds(30);
+    private static readonly SemaphoreSlim ParseSlots = new(2, 2);
 
     private static readonly Dictionary<string, string> ContentTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -70,14 +75,32 @@ public sealed class DocumentReader
         await file.CopyToAsync(buffer, ct);
         var content = buffer.ToArray();
 
-        var text = extension.ToLowerInvariant() switch
-        {
-            ".pdf" => ExtractPdf(content),
-            ".docx" => ExtractDocx(content),
-            _ => ExtractPlainText(content),
-        };
-
+        var text = await ExtractWithLimitsAsync(extension.ToLowerInvariant(), content, ct);
         return new ReadDocument(fileName, contentType, content, Normalize(text));
+    }
+
+    private static async Task<string> ExtractWithLimitsAsync(string extension, byte[] content, CancellationToken ct)
+    {
+        if (extension == ".txt")
+        {
+            return ExtractPlainText(content);
+        }
+
+        if (!await ParseSlots.WaitAsync(QueueTimeout, ct))
+        {
+            throw new DocumentRejectedException("System przetwarza obecnie inne dokumenty. Spróbuj ponownie za chwilę.");
+        }
+
+        var parsing = Task.Run(() => extension == ".pdf" ? ExtractPdf(content) : ExtractDocx(content), CancellationToken.None);
+        _ = parsing.ContinueWith(_ => ParseSlots.Release(), TaskScheduler.Default);
+        try
+        {
+            return await parsing.WaitAsync(ParseTimeout, ct);
+        }
+        catch (TimeoutException)
+        {
+            throw new DocumentRejectedException("Dokument jest zbyt złożony do automatycznego odczytu. Wprowadź treść ręcznie.");
+        }
     }
 
     private static string ExtractPdf(byte[] content)
@@ -144,7 +167,9 @@ public sealed class DocumentReader
         try
         {
             using var zip = new ZipArchive(new MemoryStream(content, writable: false), ZipArchiveMode.Read);
-            if (zip.Entries.Count > MaxZipEntries || zip.Entries.Sum(e => e.Length) > MaxUncompressedBytes)
+            if (zip.Entries.Count > MaxZipEntries
+                || zip.Entries.Sum(e => e.Length) > MaxUncompressedBytes
+                || zip.Entries.Any(e => e.Length > CompressionRatioCheckThreshold && e.Length > (long)MaxCompressionRatio * Math.Max(1, e.CompressedLength)))
             {
                 throw new DocumentRejectedException("Dokument DOCX ma podejrzaną strukturę i został odrzucony.");
             }
