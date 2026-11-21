@@ -10,11 +10,12 @@ type ConfirmDialogProps = {
   loading?: boolean
   onConfirm: () => void
   onCancel: () => void
+  finalFocus?: () => HTMLElement | null
 }
 
-export function ConfirmDialog({ open, title, children, confirmLabel, destructive, loading, onConfirm, onCancel }: ConfirmDialogProps) {
+export function ConfirmDialog({ open, title, children, confirmLabel, destructive, loading, onConfirm, onCancel, finalFocus }: ConfirmDialogProps) {
   return (
-    <Dialog.Root open={open} onOpenChange={(e) => !e.open && onCancel()} role="alertdialog">
+    <Dialog.Root open={open} onOpenChange={(e) => !e.open && onCancel()} role="alertdialog" finalFocusEl={finalFocus}>
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>

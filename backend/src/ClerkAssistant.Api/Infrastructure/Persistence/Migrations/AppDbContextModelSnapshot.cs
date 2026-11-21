@@ -127,6 +127,181 @@ namespace ClerkAssistant.Api.Infrastructure.Persistence.Migrations
                     b.ToTable("users", (string)null);
                 });
 
+            modelBuilder.Entity("ClerkAssistant.Api.Domain.AssistantAction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Arguments")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("arguments");
+
+                    b.Property<string>("CaseNumber")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("case_number");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decided_at");
+
+                    b.Property<string>("Details")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("details");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Letter")
+                        .HasColumnType("text")
+                        .HasColumnName("letter");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("message_id");
+
+                    b.Property<string>("Outcome")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("outcome");
+
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("request_id");
+
+                    b.Property<long>("RequestVersion")
+                        .HasColumnType("bigint")
+                        .HasColumnName("request_version");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("summary");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_assistant_actions");
+
+                    b.HasIndex("MessageId")
+                        .HasDatabaseName("ix_assistant_actions_message_id");
+
+                    b.HasIndex("RequestId")
+                        .HasDatabaseName("ix_assistant_actions_request_id");
+
+                    b.ToTable("assistant_actions", (string)null);
+                });
+
+            modelBuilder.Entity("ClerkAssistant.Api.Domain.AssistantConversation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_assistant_conversations");
+
+                    b.HasIndex("UpdatedAt")
+                        .HasDatabaseName("ix_assistant_conversations_updated_at");
+
+                    b.HasIndex("UserId", "UpdatedAt")
+                        .HasDatabaseName("ix_assistant_conversations_user_id_updated_at");
+
+                    b.ToTable("assistant_conversations", (string)null);
+                });
+
+            modelBuilder.Entity("ClerkAssistant.Api.Domain.AssistantMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("AiUsed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ai_used");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("conversation_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("Interrupted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("interrupted");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("role");
+
+                    b.Property<long>("Sequence")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("sequence");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Sequence"));
+
+                    b.HasKey("Id")
+                        .HasName("pk_assistant_messages");
+
+                    b.HasIndex("ConversationId", "Sequence")
+                        .HasDatabaseName("ix_assistant_messages_conversation_id_sequence");
+
+                    b.ToTable("assistant_messages", (string)null);
+                });
+
             modelBuilder.Entity("ClerkAssistant.Api.Domain.AuditEntry", b =>
                 {
                     b.Property<long>("Id")
@@ -860,6 +1035,43 @@ namespace ClerkAssistant.Api.Infrastructure.Persistence.Migrations
                     b.ToTable("user_tokens", (string)null);
                 });
 
+            modelBuilder.Entity("ClerkAssistant.Api.Domain.AssistantAction", b =>
+                {
+                    b.HasOne("ClerkAssistant.Api.Domain.AssistantMessage", null)
+                        .WithMany("Actions")
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_assistant_actions_assistant_messages_message_id");
+
+                    b.HasOne("ClerkAssistant.Api.Domain.InfoRequest", null)
+                        .WithMany()
+                        .HasForeignKey("RequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_assistant_actions_requests_request_id");
+                });
+
+            modelBuilder.Entity("ClerkAssistant.Api.Domain.AssistantConversation", b =>
+                {
+                    b.HasOne("ClerkAssistant.Api.Domain.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_assistant_conversations_users_user_id");
+                });
+
+            modelBuilder.Entity("ClerkAssistant.Api.Domain.AssistantMessage", b =>
+                {
+                    b.HasOne("ClerkAssistant.Api.Domain.AssistantConversation", null)
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_assistant_messages_assistant_conversations_conversation_id");
+                });
+
             modelBuilder.Entity("ClerkAssistant.Api.Domain.InfoRequest", b =>
                 {
                     b.HasOne("ClerkAssistant.Api.Domain.AppUser", "Assignee")
@@ -1015,6 +1227,16 @@ namespace ClerkAssistant.Api.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_user_tokens_users_user_id");
+                });
+
+            modelBuilder.Entity("ClerkAssistant.Api.Domain.AssistantConversation", b =>
+                {
+                    b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("ClerkAssistant.Api.Domain.AssistantMessage", b =>
+                {
+                    b.Navigation("Actions");
                 });
 
             modelBuilder.Entity("ClerkAssistant.Api.Domain.InfoRequest", b =>

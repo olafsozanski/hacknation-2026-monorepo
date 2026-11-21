@@ -107,7 +107,7 @@ public sealed class RequestDepartmentService(
         return date < today ? today : date;
     }
 
-    private static void CheckDepartmentDates(UpdateRequestDepartmentRequest body, DateOnly today)
+    public static void CheckDepartmentDates(UpdateRequestDepartmentRequest body, DateOnly today)
     {
         var errors = new ValidationErrors();
         if (body.AskedOn > today)

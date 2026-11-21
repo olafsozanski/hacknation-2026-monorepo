@@ -50,6 +50,9 @@ services:
       Ai__EmbeddingModel: ${AI_EMBEDDING_MODEL:-text-embedding-3-small}
       Ai__IsLocal: ${AI_IS_LOCAL:-false}
       Ai__AllowExternalProcessing: ${AI_ALLOW_EXTERNAL_PROCESSING:-false}
+      Ai__AssistantTools: ${AI_ASSISTANT_TOOLS:-true}
+      Ai__AssistantReasoningEffort: ${AI_ASSISTANT_REASONING_EFFORT:-}
+      Assistant__RetentionDays: ${ASSISTANT_RETENTION_DAYS:-30}
     ports:
       - "${APP_BIND:-127.0.0.1}:${APP_PORT:-8080}:8080"
 

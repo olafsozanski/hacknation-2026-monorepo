@@ -33,6 +33,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Features/Assistant/AppGuide.md" LogicalName="AppGuide.md" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Update="Seed/**" CopyToOutputDirectory="PreserveNewest" />
     <Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
   </ItemGroup>

@@ -1,4 +1,5 @@
 using ClerkAssistant.Api.Features.Anonymization;
+using ClerkAssistant.Api.Features.Assistant;
 using ClerkAssistant.Api.Features.Audit;
 using ClerkAssistant.Api.Features.Auth;
 using ClerkAssistant.Api.Features.Departments;
@@ -30,7 +31,8 @@ public static class FeatureRegistration
             .AddRoutingFeature()
             .AddAnonymizationFeature()
             .AddDraftsFeature()
-            .AddKnowledgeFeature();
+            .AddKnowledgeFeature()
+            .AddAssistantFeature();
 
     public static void MapFeatures(this IEndpointRouteBuilder app)
     {
@@ -51,6 +53,7 @@ public static class FeatureRegistration
         api.MapDraftsEndpoints();
         api.MapAnonymizationEndpoints();
         api.MapKnowledgeEndpoints();
+        api.MapAssistantEndpoints();
         api.MapFallback(() => TypedResults.NotFound()).AllowAnonymous();
     }
 }

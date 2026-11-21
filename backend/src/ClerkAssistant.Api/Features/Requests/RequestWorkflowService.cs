@@ -12,30 +12,12 @@ public sealed class RequestWorkflowService(
     AppClock clock,
     IOptions<OrganizationOptions> organization)
 {
+    public const int MaxExtensionReasonLength = 2000;
+
     public async Task<RequestDetail> ChangeStatusAsync(Guid id, ChangeStatusRequest body, CancellationToken ct)
     {
         var request = await db.FindRequestAsync(id, ct);
-        var today = clock.Today;
-        DateOnly? respondedOn = body.Status == RequestStatus.ResponseSent
-            ? body.RespondedOn ?? request.RespondedOn ?? today
-            : null;
-        var errors = new ValidationErrors();
-        errors.CheckDefined("status", body.Status, RequestRules.UnknownStatus);
-        if (body.Status == RequestStatus.Extended && request.ExtendedDueOn is null)
-        {
-            errors.Add("status", "Aby oznaczyć sprawę jako przedłużoną, użyj opcji przedłużenia terminu i podaj powód opóźnienia.");
-        }
-
-        if (respondedOn > today)
-        {
-            errors.Add("respondedOn", "Data wysłania odpowiedzi nie może być późniejsza niż dzisiejsza.");
-        }
-        else if (respondedOn < request.ReceivedOn)
-        {
-            errors.Add("respondedOn", "Data wysłania odpowiedzi nie może być wcześniejsza niż data wpływu wniosku.");
-        }
-
-        errors.ThrowIfAny();
+        var respondedOn = CheckStatusChange(request, body.Status, body.RespondedOn, clock.Today);
 
         db.ExpectVersion(request, body.Version, clock.Now);
         var details = DescribeStatusChange(request, body.Status, respondedOn);
@@ -50,27 +32,35 @@ public sealed class RequestWorkflowService(
         return await cases.GetAsync(id, ct);
     }
 
+    public static DateOnly? CheckStatusChange(InfoRequest request, RequestStatus status, DateOnly? respondedOn, DateOnly today)
+    {
+        DateOnly? sentOn = status == RequestStatus.ResponseSent
+            ? respondedOn ?? request.RespondedOn ?? today
+            : null;
+        var errors = new ValidationErrors();
+        errors.CheckDefined("status", status, RequestRules.UnknownStatus);
+        if (status == RequestStatus.Extended && request.ExtendedDueOn is null)
+        {
+            errors.Add("status", "Aby oznaczyć sprawę jako przedłużoną, użyj opcji przedłużenia terminu i podaj powód opóźnienia.");
+        }
+
+        if (sentOn > today)
+        {
+            errors.Add("respondedOn", "Data wysłania odpowiedzi nie może być późniejsza niż dzisiejsza.");
+        }
+        else if (sentOn < request.ReceivedOn)
+        {
+            errors.Add("respondedOn", "Data wysłania odpowiedzi nie może być wcześniejsza niż data wpływu wniosku.");
+        }
+
+        errors.ThrowIfAny();
+        return sentOn;
+    }
+
     public async Task<ExtensionResult> ExtendAsync(Guid id, ExtendDeadlineRequest body, CancellationToken ct)
     {
-        if (!Enum.IsDefined(body.Kind))
-        {
-            throw ValidationException.For("kind", "Nieprawidłowy rodzaj przedłużenia terminu.");
-        }
-
         var request = await db.FindRequestAsync(id, ct);
-        if (request.IsClosed)
-        {
-            throw ValidationException.For("days", "Nie można przedłużyć terminu w sprawie zakończonej – odpowiedź została już wysłana.");
-        }
-
-        var extendedDueOn = Deadlines.ExtendedDueDate(request.DueOn, body.Days);
-        var latest = Deadlines.LatestExtendedDueDate(request.ReceivedOn);
-        if (extendedDueOn > latest)
-        {
-            throw ValidationException.For("days",
-                $"Termin można przedłużyć najpóźniej do {RequestLetters.ShortDate(latest)} r. – nie dłużej niż 2 miesiące " +
-                "od dnia złożenia wniosku (art. 13 ust. 2 ustawy o dostępie do informacji publicznej).");
-        }
+        var extendedDueOn = CheckExtension(request, body);
 
         db.ExpectVersion(request, body.Version, clock.Now);
         request.ExtendedDueOn = extendedDueOn;
@@ -83,6 +73,41 @@ public sealed class RequestWorkflowService(
 
         var notice = RequestLetters.ExtensionNotice(request, extendedDueOn, organization.Value, clock.Today);
         return RequestMapper.ToExtensionResult(extendedDueOn, notice);
+    }
+
+    public static DateOnly CheckExtension(InfoRequest request, ExtendDeadlineRequest body)
+    {
+        if (!Enum.IsDefined(body.Kind))
+        {
+            throw ValidationException.For("kind", "Nieprawidłowy rodzaj przedłużenia terminu.");
+        }
+
+        if (request.IsClosed)
+        {
+            throw ValidationException.For("days", "Nie można przedłużyć terminu w sprawie zakończonej – odpowiedź została już wysłana.");
+        }
+
+        if (body.Days < 1)
+        {
+            throw ValidationException.For("days", "Termin można przedłużyć co najmniej o 1 dzień.");
+        }
+
+        if (string.IsNullOrWhiteSpace(body.Reason) || body.Reason.Trim().Length > MaxExtensionReasonLength)
+        {
+            throw ValidationException.For("reason",
+                $"Podaj powód przedłużenia terminu (najwyżej {MaxExtensionReasonLength} znaków).");
+        }
+
+        var extendedDueOn = Deadlines.ExtendedDueDate(request.DueOn, body.Days);
+        var latest = Deadlines.LatestExtendedDueDate(request.ReceivedOn);
+        if (extendedDueOn > latest)
+        {
+            throw ValidationException.For("days",
+                $"Termin można przedłużyć najpóźniej do {RequestLetters.ShortDate(latest)} r. – nie dłużej niż 2 miesiące " +
+                "od dnia złożenia wniosku (art. 13 ust. 2 ustawy o dostępie do informacji publicznej).");
+        }
+
+        return extendedDueOn;
     }
 
     private static string? DescribeStatusChange(InfoRequest request, RequestStatus status, DateOnly? respondedOn)

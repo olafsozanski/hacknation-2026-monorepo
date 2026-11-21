@@ -23,6 +23,12 @@ informacji publicznej (UDIP). Skraca przygotowanie odpowiedzi z kilku dni do kil
   odpowiedzi oraz jako osobne narzędzie dla dowolnego dokumentu (bez zapisywania go w systemie).
 - **Baza wiedzy** — akty prawne, zarządzenia i archiwalne odpowiedzi (także hurtowo), wykorzystywane
   w wyszukiwaniu i przy tworzeniu projektów.
+- **Asystent w aplikacji** — odpowiada po polsku na pytania o działanie programu i zasady obsługi
+  wniosków, widzi bieżący ekran i dane sprawy, sprawdza rejestr, archiwum i wydziały oraz proponuje
+  działania (zmiana statusu, przedłużenie terminu, wydziały, daty zapytań), które wykonują się dopiero
+  po zatwierdzeniu przez urzędnika; bez AI działa w trybie podstawowym. Rozmowy są przechowywane przez
+  `ASSISTANT_RETENTION_DAYS` dni (domyślnie 30); dla modeli lokalnych bez wywoływania narzędzi ustaw
+  `AI_ASSISTANT_TOOLS=false`.
 - **Bez automatycznej wysyłki** — program przygotowuje treści do skopiowania; decyzję zawsze
   podejmuje urzędnik.
 

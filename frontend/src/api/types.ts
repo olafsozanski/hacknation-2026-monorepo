@@ -39,7 +39,8 @@ export type SessionResponse = { user: SessionUser | null; csrfToken: string }
 export type SystemInfo = {
   organizationName: string
   unitName: string
-  ai: { enabled: boolean; isLocal: boolean; provider: string; chatModel: string }
+  ai: { enabled: boolean; isLocal: boolean; provider: string; chatModel: string; assistantTools: boolean }
+  assistantRetentionDays: number
 }
 
 export type RequestListItem = {
@@ -280,3 +281,54 @@ export type AuditEntry = {
   entityId: string | null
   details: string | null
 }
+
+export type AssistantRole = 'User' | 'Assistant'
+export type AssistantActionKind = 'ChangeStatus' | 'ExtendDeadline' | 'SetDepartments' | 'UpdateDepartmentDates'
+export type AssistantActionStatus = 'Proposed' | 'Executed' | 'Rejected' | 'Failed'
+
+export type AssistantConversationSummary = { id: string; title: string; updatedAt: string }
+
+export type AssistantAction = {
+  id: string
+  kind: AssistantActionKind
+  requestId: string
+  caseNumber: string
+  summary: string
+  details: string[]
+  status: AssistantActionStatus
+  outcome: string | null
+  letter: string | null
+  createdAt: string
+}
+
+export type AssistantMessage = {
+  id: string
+  role: AssistantRole
+  content: string
+  createdAt: string
+  aiUsed: boolean
+  interrupted: boolean
+  actions: AssistantAction[]
+}
+
+export type AssistantConversation = AssistantConversationSummary & { messages: AssistantMessage[] }
+
+export type ScreenFieldError = { label: string; message: string }
+
+export type ScreenContext = {
+  path: string
+  title: string | null
+  heading: string | null
+  dialog: string | null
+  fieldErrors: ScreenFieldError[]
+  alerts: string[]
+}
+
+export type SendAssistantMessage = { conversationId: string | null; text: string; screen: ScreenContext }
+
+export type AssistantStreamEvent =
+  | { type: 'conversation'; conversationId: string; title: string; userMessage: AssistantMessage }
+  | { type: 'status'; text: string }
+  | { type: 'delta'; text: string }
+  | { type: 'done'; message: AssistantMessage; warnings: string[] }
+  | { type: 'error'; message: string; assistantMessage: AssistantMessage | null }

@@ -1,4 +1,6 @@
 using ClerkAssistant.Api.Infrastructure.Ai;
+using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Configuration;
 
 namespace ClerkAssistant.Api.Tests.Security;
 
@@ -17,6 +19,21 @@ public class AiOptionsTests
         var options = new AiOptions { IsLocal = true, Endpoint = endpoint };
 
         Assert.Equal(expected, options.IsConfigured);
+    }
+
+    [Theory]
+    [InlineData("", null)]
+    [InlineData("None", ReasoningEffort.None)]
+    [InlineData("low", ReasoningEffort.Low)]
+    public void Assistant_reasoning_effort_binds_from_configuration(string value, ReasoningEffort? expected)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["Ai:AssistantReasoningEffort"] = value })
+            .Build();
+
+        var options = configuration.GetSection(AiOptions.Section).Get<AiOptions>()!;
+
+        Assert.Equal(expected, options.AssistantReasoningEffort);
     }
 
     [Fact]

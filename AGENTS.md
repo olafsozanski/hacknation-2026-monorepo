@@ -12,6 +12,8 @@ backend/                     .NET 10 (LTS) minimal API, EF Core + PostgreSQL (pg
   src/ClerkAssistant.Api/
     Domain/                  entities, enums, deadline rules (KPA art. 57, UDIP art. 13)
     Features/<Feature>/      vertical slices: <Feature>Contracts.cs, <Feature>Endpoints.cs, services
+    Features/Assistant/      in-app assistant: SSE chat, tools, proposals confirmed by the clerk;
+                             AppGuide.md (embedded) is the app knowledge in every prompt — keep it current
     Infrastructure/          persistence, security, documents, AI clients, seeding, shared helpers
     Seed/                    reference data (departments from BIP)
   tests/ClerkAssistant.Api.Tests/

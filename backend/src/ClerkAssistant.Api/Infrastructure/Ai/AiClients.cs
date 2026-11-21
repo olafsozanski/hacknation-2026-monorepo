@@ -8,6 +8,8 @@ namespace ClerkAssistant.Api.Infrastructure.Ai;
 
 public sealed class AiClients
 {
+    public const int MaxToolIterations = 5;
+
     public AiClients(IOptions<AiOptions> options)
     {
         Options = options.Value;
@@ -24,6 +26,7 @@ public sealed class AiClients
                 NetworkTimeout = TimeSpan.FromSeconds(Options.TimeoutSeconds),
             });
         Chat = client.GetChatClient(Options.ChatModel).AsIChatClient();
+        ToolChat = WithToolInvocation(Chat);
         Embeddings = client.GetEmbeddingClient(Options.EmbeddingModel)
             .AsIEmbeddingGenerator(AppDbContext.EmbeddingDimensions);
     }
@@ -35,12 +38,23 @@ public sealed class AiClients
     {
         Options = options;
         Chat = chat;
+        ToolChat = chat is null ? null : WithToolInvocation(chat);
         Embeddings = embeddings;
     }
 
     public AiOptions Options { get; }
     public IChatClient? Chat { get; }
+    public IChatClient? ToolChat { get; }
     public IEmbeddingGenerator<string, Embedding<float>>? Embeddings { get; }
 
     public bool IsEnabled => Chat is not null;
+
+    public bool CanUseTools => IsEnabled && Options.AssistantTools;
+
+    private static FunctionInvokingChatClient WithToolInvocation(IChatClient chat) => new(chat)
+    {
+        MaximumIterationsPerRequest = MaxToolIterations,
+        AllowConcurrentInvocation = false,
+        IncludeDetailedErrors = false,
+    };
 }

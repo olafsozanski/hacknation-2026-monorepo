@@ -1,4 +1,6 @@
 import type {
+  AssistantActionKind,
+  AssistantActionStatus,
   DocumentKind,
   ExtensionKind,
   KnowledgeKind,
@@ -89,6 +91,20 @@ export const suggestionSourceLabels: Record<SuggestionSource, string> = {
   Keywords: 'Zakres działania',
 }
 
+export const assistantActionKindLabels: Record<AssistantActionKind, string> = {
+  ChangeStatus: 'Zmiana statusu sprawy',
+  ExtendDeadline: 'Przedłużenie terminu',
+  SetDepartments: 'Wybór wydziałów',
+  UpdateDepartmentDates: 'Daty zapytań do wydziałów',
+}
+
+export const assistantActionStatusLabels: Record<AssistantActionStatus, string> = {
+  Proposed: 'Czeka na Twoją decyzję',
+  Executed: 'Wykonano',
+  Rejected: 'Odrzucono',
+  Failed: 'Nie udało się wykonać',
+}
+
 export const auditActionLabels: Record<string, string> = {
   'request.created': 'Zarejestrowano wniosek',
   'request.updated': 'Zmieniono dane sprawy',
@@ -118,6 +134,8 @@ export const auditActionLabels: Record<string, string> = {
   'knowledge.deleted': 'Usunięto dokument z bazy wiedzy',
   'anonymization.analyzed': 'Sprawdzono dokument pod kątem anonimizacji',
   'anonymization.exported': 'Pobrano zanonimizowany dokument',
+  'assistant.action-confirmed': 'Zatwierdzono propozycję asystenta',
+  'assistant.action-rejected': 'Odrzucono propozycję asystenta',
 }
 
 export function deadlineLabel(urgency: Urgency, daysLeft: number) {

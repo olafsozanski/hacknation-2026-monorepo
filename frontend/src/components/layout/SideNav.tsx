@@ -1,5 +1,16 @@
 import { Box, Button, Stack, Text } from '@chakra-ui/react'
-import { Archive, BookOpen, Building2, FilePlus2, Inbox, ScrollText, ShieldCheck, Users, type LucideIcon } from 'lucide-react'
+import {
+  Archive,
+  BookOpen,
+  Building2,
+  FilePlus2,
+  Inbox,
+  MessageCircleQuestion,
+  ScrollText,
+  ShieldCheck,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
 import { Link as RouterLink, NavLink } from 'react-router'
 import { useCurrentUser } from '@/features/auth/session'
 
@@ -11,6 +22,7 @@ const mainItems: Item[] = [
   { to: '/anonimizacja', label: 'Anonimizacja', icon: ShieldCheck },
   { to: '/baza-wiedzy', label: 'Baza wiedzy', icon: BookOpen },
   { to: '/wydzialy', label: 'Wydziały i biura', icon: Building2 },
+  { to: '/asystent', label: 'Asystent', icon: MessageCircleQuestion },
 ]
 
 const adminItems: Item[] = [

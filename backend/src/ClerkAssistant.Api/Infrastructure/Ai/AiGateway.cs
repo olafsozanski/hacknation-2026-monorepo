@@ -1,4 +1,5 @@
 using System.ClientModel;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using ClerkAssistant.Api.Infrastructure.Persistence;
 using Microsoft.Extensions.AI;
@@ -13,11 +14,25 @@ public sealed record AiAttempt<T>(T? Value, bool Failed) where T : class
     public bool Succeeded => Value is not null;
 }
 
+public enum AiStreamUpdateKind
+{
+    Text,
+    ToolCall,
+    Failed,
+}
+
+public sealed record AiStreamUpdate(AiStreamUpdateKind Kind, string Value)
+{
+    public static AiStreamUpdate Failure { get; } = new(AiStreamUpdateKind.Failed, "");
+}
+
 public sealed class AiGateway(AiClients ai, ILogger<AiGateway> logger)
 {
     public const string FallbackWarning = "Model AI jest niedostępny — użyto trybu podstawowego.";
 
     public bool IsEnabled => ai.IsEnabled;
+
+    public bool CanUseTools => ai.CanUseTools;
 
     public bool CanEmbed => ai.IsEnabled && ai.Embeddings is not null;
 
@@ -62,6 +77,65 @@ public sealed class AiGateway(AiClients ai, ILogger<AiGateway> logger)
             return embeddings.Select(e => new Vector(e.Vector)).ToArray();
         }, ct);
 
+    public async IAsyncEnumerable<AiStreamUpdate> StreamChatAsync(
+        string operation,
+        IReadOnlyList<ChatMessage> messages,
+        IList<AITool>? tools,
+        [EnumeratorCancellation] CancellationToken ct)
+    {
+        if (!ai.IsEnabled)
+        {
+            yield return AiStreamUpdate.Failure;
+            yield break;
+        }
+
+        var useTools = tools is { Count: > 0 } && ai.CanUseTools;
+        var client = useTools ? ai.ToolChat! : ai.Chat!;
+        var options = CreateOptions();
+        if (useTools)
+        {
+            options.Tools = tools;
+            options.Reasoning = ToolReasoning();
+        }
+        await using var updates = client.GetStreamingResponseAsync(messages, options, ct).GetAsyncEnumerator(ct);
+        while (true)
+        {
+            ChatResponseUpdate? update = null;
+            try
+            {
+                if (!await updates.MoveNextAsync())
+                {
+                    yield break;
+                }
+
+                update = updates.Current;
+            }
+            catch (Exception ex) when (IsModelFailure(ex, ct))
+            {
+                LogFailure(operation, ex);
+            }
+
+            if (update is null)
+            {
+                yield return AiStreamUpdate.Failure;
+                yield break;
+            }
+
+            foreach (var content in update.Contents)
+            {
+                switch (content)
+                {
+                    case FunctionCallContent call:
+                        yield return new AiStreamUpdate(AiStreamUpdateKind.ToolCall, call.Name);
+                        break;
+                    case TextContent { Text.Length: > 0 } text when update.Role != ChatRole.Tool:
+                        yield return new AiStreamUpdate(AiStreamUpdateKind.Text, text.Text);
+                        break;
+                }
+            }
+        }
+    }
+
     public static bool IsModelFailure(Exception exception, CancellationToken ct) => exception switch
     {
         OperationCanceledException => !ct.IsCancellationRequested,
@@ -83,16 +157,22 @@ public sealed class AiGateway(AiClients ai, ILogger<AiGateway> logger)
         }
         catch (Exception ex) when (IsModelFailure(ex, ct))
         {
-            logger.LogWarning(
-                "AI operation {Operation} failed ({ErrorType}, status {Status}); using the fallback",
-                operation,
-                ex.GetType().Name,
-                StatusOf(ex));
+            LogFailure(operation, ex);
             return new AiAttempt<T>(null, true);
         }
     }
 
+    private void LogFailure(string operation, Exception ex) =>
+        logger.LogWarning(
+            "AI operation {Operation} failed ({ErrorType}, status {Status}); using the fallback",
+            operation,
+            ex.GetType().Name,
+            StatusOf(ex));
+
     private ChatOptions CreateOptions() => new() { Temperature = ai.Options.Temperature };
+
+    private ReasoningOptions? ToolReasoning() =>
+        ai.Options.AssistantReasoningEffort is { } effort ? new ReasoningOptions { Effort = effort } : null;
 
     private static ChatMessage[] Messages(string systemPrompt, string userPrompt) =>
     [

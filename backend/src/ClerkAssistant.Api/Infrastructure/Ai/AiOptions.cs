@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using Microsoft.Extensions.AI;
 
 namespace ClerkAssistant.Api.Infrastructure.Ai;
 
@@ -20,6 +21,8 @@ public sealed class AiOptions
     public float? Temperature { get; set; }
     public int IndexingIntervalSeconds { get; set; } = 30;
     public int IndexingBatchSize { get; set; } = 16;
+    public bool AssistantTools { get; set; } = true;
+    public ReasoningEffort? AssistantReasoningEffort { get; set; }
 
     public bool UsesLocalEndpoint => IsLocal && IsInternalEndpoint(Endpoint);
 

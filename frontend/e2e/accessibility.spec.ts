@@ -30,6 +30,7 @@ const pages = [
   { path: '/administracja/uzytkownicy', heading: 'Użytkownicy' },
   { path: '/administracja/dziennik', heading: 'Dziennik zdarzeń' },
   { path: '/dostepnosc', heading: 'Deklaracja dostępności' },
+  { path: '/asystent', heading: 'Asystent' },
 ]
 
 for (const { path, heading } of pages) {
@@ -54,4 +55,14 @@ test('high contrast mode meets WCAG 2.1 AA', async ({ page }) => {
   await page.getByRole('button', { name: 'Wersja kontrastowa' }).click()
   await page.waitForLoadState('networkidle')
   await expectNoAccessibilityViolations(page)
+})
+
+test('assistant pop-up meets WCAG 2.1 AA', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Asystent', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Asystent' })).toBeVisible()
+  await expect(page.getByRole('textbox', { name: 'Twoje pytanie' })).toBeFocused()
+  await expectNoAccessibilityViolations(page)
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('button', { name: 'Asystent', exact: true })).toBeFocused()
 })

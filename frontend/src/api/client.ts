@@ -50,10 +50,11 @@ type RequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   body?: unknown
   signal?: AbortSignal
+  accept?: string
 }
 
-async function send(path: string, { method = 'GET', body, signal }: RequestOptions): Promise<Response> {
-  const headers: Record<string, string> = { Accept: 'application/json' }
+async function send(path: string, { method = 'GET', body, signal, accept = 'application/json' }: RequestOptions): Promise<Response> {
+  const headers: Record<string, string> = { Accept: accept }
   if (method !== 'GET' && csrfToken) headers['X-XSRF-TOKEN'] = csrfToken
   let payload: BodyInit | undefined
   if (body instanceof FormData) {
@@ -95,6 +96,10 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   if (response.status === 204 || response.headers.get('Content-Length') === '0') return undefined as T
   const type = response.headers.get('Content-Type') ?? ''
   return (type.includes('json') ? await response.json() : undefined) as T
+}
+
+export function postEventStream(path: string, body: unknown, signal: AbortSignal): Promise<Response> {
+  return send(path, { method: 'POST', body, signal, accept: 'text/event-stream, application/problem+json' })
 }
 
 export async function downloadFile(path: string, fallbackName: string, body?: unknown) {

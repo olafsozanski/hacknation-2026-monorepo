@@ -14,11 +14,31 @@ namespace ClerkAssistant.Api.Tests.Ai;
 
 public sealed record ChatCall(string SystemPrompt, string UserPrompt);
 
+public sealed record StreamCall(IReadOnlyList<ChatMessage> Messages, ChatOptions? Options)
+{
+    public string SystemPrompt => Messages.First(m => m.Role == ChatRole.System).Text;
+
+    public IEnumerable<string> ToolResults => Messages
+        .SelectMany(m => m.Contents.OfType<FunctionResultContent>())
+        .Select(r => r.Result?.ToString() ?? "");
+}
+
 public sealed class FakeChatClient : IChatClient
 {
     public ConcurrentQueue<ChatCall> Calls { get; } = new();
 
     public Func<ChatCall, string> Responder { get; set; } = _ => "{}";
+
+    public ConcurrentQueue<StreamCall> StreamCalls { get; } = new();
+
+    public Func<IReadOnlyList<ChatMessage>, ChatOptions?, IEnumerable<ChatResponseUpdate>>? Streamer { get; set; }
+
+    public static ChatResponseUpdate Hang { get; } = new(ChatRole.Assistant, "");
+
+    public static ChatResponseUpdate Text(string text) => new(ChatRole.Assistant, text);
+
+    public static ChatResponseUpdate ToolCall(string name, Dictionary<string, object?> arguments) =>
+        new(ChatRole.Assistant, [new FunctionCallContent(Guid.NewGuid().ToString("N"), name, arguments)]);
 
     public Task<ChatResponse> GetResponseAsync(
         IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
@@ -36,8 +56,26 @@ public sealed class FakeChatClient : IChatClient
         ChatOptions? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var response = await GetResponseAsync(messages, options, cancellationToken);
-        yield return new ChatResponseUpdate(ChatRole.Assistant, response.Text);
+        if (Streamer is null)
+        {
+            var response = await GetResponseAsync(messages, options, cancellationToken);
+            yield return new ChatResponseUpdate(ChatRole.Assistant, response.Text);
+            yield break;
+        }
+
+        var history = messages.ToList();
+        StreamCalls.Enqueue(new StreamCall(history, options));
+        foreach (var update in Streamer(history, options))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await Task.Yield();
+            if (ReferenceEquals(update, Hang))
+            {
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+            }
+
+            yield return update;
+        }
     }
 
     public object? GetService(Type serviceType, object? serviceKey = null) => null;
@@ -97,7 +135,7 @@ public sealed class FakeEmbeddingGenerator : IEmbeddingGenerator<string, Embeddi
     }
 }
 
-public sealed class FakeAiFactory : AiApiFactory
+public class FakeAiFactory : AiApiFactory
 {
     public FakeChatClient Chat { get; } = new();
 

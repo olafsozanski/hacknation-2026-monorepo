@@ -22,6 +22,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<KnowledgeDocument> KnowledgeDocuments => Set<KnowledgeDocument>();
     public DbSet<KnowledgeChunk> KnowledgeChunks => Set<KnowledgeChunk>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
+    public DbSet<AssistantConversation> AssistantConversations => Set<AssistantConversation>();
+    public DbSet<AssistantMessage> AssistantMessages => Set<AssistantMessage>();
+    public DbSet<AssistantAction> AssistantActions => Set<AssistantAction>();
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
     protected override void OnModelCreating(ModelBuilder builder)
