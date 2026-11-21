@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "chakra-ui": {
+      "command": "npx",
+      "args": ["-y", "@chakra-ui/react-mcp@2.1.1"],
+      "env": { "NODE_USE_ENV_PROXY": "1" }
+    }
+  }
+}

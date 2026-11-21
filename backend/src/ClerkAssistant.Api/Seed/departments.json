@@ -1,0 +1,205 @@
+[
+  {
+    "symbol": "WAB",
+    "name": "Wydział Administracji Budowlanej",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Administracji Budowlanej należy: 1) prowadzenie spraw z zakresu kształtowania i realizowania ładu architektonicznego miasta; 2) wykonywanie czynności z zakresu administracji architektoniczno-budowlanej; 3) zapewnianie zrównoważonego rozwoju przestrzennego Miasta; 4) prowadzenie spraw z zakresu inicjatyw lokalnych w ramach programu „25/75”.",
+    "email": "wab@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "WE",
+    "name": "Wydział Edukacji i Sportu",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Edukacji i Sportu należy: 1) prowadzenie spraw związanych z organizacją i funkcjonowaniem przedszkoli, szkół podstawowych, ponadpodstawowych i innych placówek wychowawczo- edukacyjnych prowadzonych przez Miasto; 2) współpraca z instytucjami rządowymi, samorządowymi i organizacjami pozarządowymi w tworzeniu właściwych warunków dydaktyczno- wychowawczych; 3) prowadzenie ewidencji szkół i placówek niepublicznych oraz uczniowskich klubów sportowych; 4) podejmowanie działań na rzecz rozwoju szkolnictwa wyższego i działalności naukowo-badawczej; 5) prowadzenie spraw związanych z funkcjonowaniem, rozwojem i upowszechnianiem kultury fizycznej i sportu; 6) sprawowanie nadzoru nad stowarzyszeniami kultury fizycznej i związkami sportowymi oraz spółkami prawa handlowego, w których Miasto posiada akcje/ udziały w zakresie sportu oraz nadzorowanie działalności uczniowskich klubów sportowych i stowarzyszeń kultury fizycznej nieprowadzących działalności gospodarczej; 7) kontrola finansowo-księgowa i formalno-prawna placówek oświatowych i miejskich jednostek organizacyjnych; 8) planowanie i nadzór nad realizacją budżetu Miasta w zakresie zadań oświatowych; 9) obsługa merytoryczna i finansowa zadań oświatowych realizowanych ze środków budżetu państwa, organów administracji rządowej, funduszy celowych, innych jednostek samorządu terytorialnego i innych podmiotów; 10) udzielanie i rozliczanie dotacji dla szkół i placówek niepublicznych; 11) prowadzenie kontroli w zakresie działania niepublicznych jednostek oświatowych oraz jednostek organizacyjnych Miasta oraz prowadzenie postępowań administracyjnych w zakresie zwrotu dotacji.",
+    "email": "we@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "WF",
+    "name": "Wydział Funduszy Europejskich",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Funduszy Europejskich należy: 1) monitoring źródeł dofinansowania z funduszy europejskich dla inwestycji i projektów społecznych Miasta, 2) przekazywanie wydziałom Urzędu Miasta i miejskim jednostkom organizacyjnym informacji o możliwościach pozyskania dofinansowania, 3) współpraca z wydziałami Urzędu Miasta i miejskimi jednostkami organizacyjnymi w zakresie projektów wspieranych z funduszy europejskich, 4) składanie aplikacji o fundusze europejskie dla powierzonych projektów Miasta, koordynacja ich wdrażania i sprawozdawczość w okresie trwałości, 5) rozliczanie powierzonych projektów Miasta dofinansowanych z funduszy europejskich, 6) informacja zbiorcza na temat realizowanych przez Miasto projektów, 7) koordynowanie prac związanych ze strategią rozwoju miasta i raportem o stanie gminy, 8) monitoring sytuacji społeczno-gospodarczej miasta, w tym efektów projektów europejskich.",
+    "email": "wf@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "WGO",
+    "name": "Wydział Gospodarki Odpadami",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Gospodarki Odpadami należy: 1) prowadzenie spraw związanych z funkcjonowaniem systemu gospodarowania odpadami komunalnymi w mieście Bydgoszczy, 2) prowadzenie działań w zakresie usuwania odpadów z miejsc nieprzeznaczonych do ich składowania i magazynowania w rozumieniu ustawy z dnia 14 grudnia 2012 r. o odpadach wraz z jej zmianami i aktami wykonawczymi do tejże ustawy, będącymi własnością Gminy Bydgoszcz.",
+    "email": "odpady@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "WI",
+    "name": "Wydział Informatyki",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Informatyki należy: 1) informatyzacja Urzędu i zapewnienie ciągłości funkcjonowania systemów teleinformatycznych; 2) opracowywanie planów rozwoju usług teleinformatycznych wspierających pracę poszczególnych komórek Urzędu; 3) nadzorowanie i koordynowanie umów z dostawcami rozwiązań informatycznych; 4) nadzorowanie i koordynowanie projektów teleinformatycznych; 5) świadczenie usług informatycznych w ramach zawartych umów i porozumień; 6) optymalizacja wykorzystania zasobów teleinformatycznych Urzędu dla zapewnienia wysokiej jakości świadczonych usług przy jednoczesnej minimalizacji kosztów; 7) zapewnienie bezpieczeństwa danych przetwarzanych w systemach teleinformatycznych zarządzanych przez Wydział Informatyki zgodnie z wymaganiami prawa oraz zasadami wdrożonego Systemu Zarządzania Bezpieczeństwem Informacji.",
+    "email": "informatyka@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "WIM",
+    "name": "Wydział Inwestycji Miasta",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Inwestycji Miasta należy: 1) przygotowywanie miejskich inwestycji do realizacji i sprawowanie nadzoru inwestorskiego nad ich realizacją, z wyłączeniem inwestycji drogowych; 2) współpraca z jednostkami organizacyjnymi Miasta w sprawach inwestycji, które są finansowane lub współfinansowane przez Miasto; 3) opracowywanie korekt rocznych planów inwestycyjnych i pozostałych wieloletnich zadań majątkowych.",
+    "email": "wim@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "WK",
+    "name": "Wydział Księgowości",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Księgowości należy: 1) obsługa finansowo-księgowa wydatków i niepodatkowych dochodów Urzędu Miasta oraz prowadzenie rozliczeń Miasta z tytułu podatków od towarów i usług, 2) obsługa rozliczeń finansowo-księgowych IP FEdKP w ramach ZIT BydOF.",
+    "email": "wk@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "WMG",
+    "name": "Wydział Mienia i Geodezji",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Mienia i Geodezji należy: 1) prowadzenie spraw związanych z gospodarowaniem nieruchomościami będącymi własnością i współwłasnością Miasta i Skarbu Państwa; 2) prowadzenie ewidencji majątku nieruchomego Miasta i Skarbu Państwa; 3) sprawowanie nadzoru nad gospodarowaniem miejskim zasobem nieruchomości; 4) prowadzenie katastru nieruchomości w zakresie części opisowej państwowego zasobu geodezyjnego i kartograficznego, w tym ewidencji gruntów i budynków oraz gleboznawczej klasyfikacji gruntów i spraw związanych z taksacją nieruchomości; 5) prowadzenie ewidencji miejscowości, ulic i adresów; 6) prowadzenie spraw nazewnictwa ulic i placów.",
+    "email": "wmg@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "WOŚ",
+    "name": "Wydział Ochrony Środowiska",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Ochrony Środowiska należy: 1) koordynacja spraw związanych z realizacją Programu Ochrony Środowiska dla miasta Bydgoszczy oraz Planu Adaptacji miasta Bydgoszczy do zmian klimatu; 2) wykonywanie zadań wynikających z ustawy – Prawo ochrony środowiska; 3) wykonywanie zadań wynikających z ustawy o udostępnianiu informacji o środowisku i jego ochronie, udziale społeczeństwa w ochronie środowiska oraz o ocenach oddziaływania na środowisko; 4) wykonywanie zadań wynikających z ustawy - Prawo geologiczne i górnicze; 5) prowadzenie spraw związanych z gospodarką odpadami innymi niż komunalne; 6) udzielanie dotacji celowej na dofinansowanie kosztów inwestycji z zakresu ochrony środowiska i gospodarki wodnej oraz jej rozliczanie; 7) planowanie i rozliczanie dochodów z tytułu opłat i kar za korzystanie ze środowiska oraz wydatków finansowych z tych opłat.",
+    "email": "wos@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "WOA",
+    "name": "Wydział Organizacyjno-Administracyjny",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Organizacyjno-Administracyjnego należy zapewnienie prawidłowej organizacji i sprawnego funkcjonowania Urzędu i realizacji zadań wynikających z funkcji Prezydenta Miasta, a w szczególności: 1) opracowywanie projektów statutu i regulaminów oraz innych dokumentów dotyczących funkcjonowania Urzędu; 2) prowadzenie rejestru zarządzeń i poleceń Prezydenta oraz poleceń Sekretarza Miasta; 3) nadzorowanie stosowania przepisów instrukcji kancelaryjnej w Urzędzie; 4) przygotowywanie posiedzeń Kolegium Prezydenta Miasta; 5) prowadzenie rejestrów pełnomocnictw i upoważnień udzielonych przez Prezydenta; 6) prowadzenie spraw kadrowych i szkoleniowych pracowników Urzędu; 7) prowadzenie spraw kadrowych kierowników jednostek organizacyjnych, z wyłączeniem kierowników przedszkoli, szkół i innych jednostek oświatowo-wychowawczych; 8) prowadzenie spraw z zakresu służby przygotowawczej, 9) prowadzenie spraw socjalnych pracowników Urzędu i uprawnionych członków ich rodzin oraz emerytów i rencistów- byłych pracowników Urzędu; 10) prowadzenie ewidencji i nadzór nad terminowym załatwianiem interpelacji i zapytań radnych oraz wniosków komisji Rady Miasta; 11) opracowywanie sprawozdań dla Rady Miasta z działalności Prezydenta we współpracy z innymi Wydziałami; 12) realizacja zadań dotyczących organizacji i załatwiania skarg i wniosków mieszkańców; 13) obsługa interesantów w zakresie kompleksowej informacji dotyczącej merytorycznej działalności jednostek organizacyjnych Urzędu; 14) współudział w organizowaniu i przeprowadzaniu wyborów samorządowych, parlamentarnych i prezydenckich oraz referendów; 15) administrowanie budynkami Urzędu; 16) prowadzenie spraw finansowych związanych z utrzymaniem i funkcjonowaniem Urzędu; 17) prowadzenie ewidencji środków trwałych i wyposażenia Urzędu; 18) prowadzenie archiwum zakładowego, 19) prowadzenie kancelarii – przyjmowanie i rejestracja korespondencji, zapewnienie obsługi pocztowej i kurierskiej oraz dostarczanie na terenie Miasta Bydgoszczy korespondencji Urzędu Miasta, 20) obsługa głównego konta poczty elektronicznej Urzędu Miasta – urzad@um.bydgoszcz.pl oraz skrzynki elektronicznej ePUAP, 21) realizacja zadań dotyczących petycji, 22) obsługa ratuszowej infolinii 0800 800 404 oraz centrali telefonicznej Urzędu, 23) prowadzenie spraw w zakresie administracyjnym związanych z Pracowniczymi Planami Kapitałowymi, 24) zapewnienie obsługi w sekretariacie Zespołu Prawnego w trakcie nieobecności samodzielnego stanowiska ds. administracyjno-technicznych, 25) zapewnienie bezpieczeństwa fizycznego budynków, pomieszczeń oraz dokumentów i zapisów przetwarzanych w formie papierowej oraz bezpieczeństwa osobowego zgodnie z wymaganiami prawa oraz zasadami wdrożonego Systemu Zarządzania Bezpieczeństwem Informacji. 26) zarządzanie obiegiem dokumentów w systemie EZD w Urzędzie Miasta.",
+    "email": "woa@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "WPL",
+    "name": "Wydział Podatków i Opłat Lokalnych",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Podatków i Opłat Lokalnych należy: 1) prowadzenie spraw dotyczących wymiaru podatków i opłat lokalnych oraz opłaty skarbowej; 2) prowadzenie rachunkowości podatkowej; 3) prowadzenie spraw w zakresie ulg w spłacie należności podatkowych oraz należności dla których organem podatkowym są urzędy skarbowe, a które stanowią dochody podatkowe budżetu Miasta; 4) prowadzenie spraw związanych z pomocą publiczną w zakresie podatków i opłat lokalnych oraz sprawozdawczości z udzielonej pomocy publicznej w tym zakresie; 5) wydawanie indywidualnych interpretacji w zakresie podatków i opłat lokalnych. PLATFORMA DO SKŁADANIA DEKLARACJI I INFORMACJI PODATKOWYCH ON-LINE W BYDGOSZCZY - PRZYJAZNE DEKLARACJE Miasto zachęca mieszkańców do skorzystania z platformy Przyjazne Deklaracje, dzięki której wypełnienie obowiązku podatkowego jest proste jak nigdy dotąd. Właściciele nieruchomości, roli, lasów oraz środków transportowych powyżej 3,5 t mogą przygotować deklaracje lub informacje on-line: - na podatek od środków transportowych, - na podatek od nieruchomości, - na podatek rolny, - na podatek leśny. Platforma pomoże w wypełnieniu deklaracji lub informacji, wyjaśni trudne urzędowe pojęcia prostym i zrozumiałem językiem dla mieszkańca, automatycznie dobierze stawki, wygeneruje deklaracje wraz z załącznikami do PDF. Możesz wydrukować dokumenty podpisać odręcznie, wysłać pocztą lub doręczyć osobiście. Istnieje również możliwość złożenia dokumentów drogą elektroniczną podpisując je Profilem Zaufanym lub kwalifikowanym podpisem elektronicznym. Ze względu na wspólne bezpieczeństwo i oszczędność Twojego czasu jest to rekomendowana forma złożenia dokumentów do Urzędu. Numery telefonów Wydziału Podatków i Opłat Lokalnych",
+    "email": "wpl@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "WSO",
+    "name": "Wydział Spraw Obywatelskich",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Spraw Obywatelskich należy: 1) prowadzenie spraw z zakresu ewidencji ludności; 2) prowadzenie Rejestru Wyborców; 3) współudział w organizowaniu i przeprowadzaniu wyborów i referendów; 4) uchylony 5) potwierdzanie profilu zaufanego e-PUAP; 6) nakładanie świadczeń rzeczowych i osobistych na rzecz obrony; 7) prowadzenie Akcji Kurierskiej polegającej na doręczaniu dokumentów powołania; 8) prowadzenie spraw z zakresu powszechnego obowiązku obrony państwa; 9) prowadzenie spraw z zakresu wydawania dowodów osobistych; 10) udostępnianie danych osobowych ze zbioru kopert dowodowych; 11) wydawanie zezwoleń na sprzedaż i spożywanie napojów alkoholowych; 12) prowadzenie punktu przechowywania rzeczy znalezionych; 13) prowadzenie spraw dotyczących imprez masowych, imprez powodujących utrudnienia w ruchu lub wymagających wykorzystania drogi w sposób szczególny oraz imprez artystycznych lub rozrywkowych; 14) przyjmowanie zawiadomień o zgromadzeniach publicznych, z wyłączeniem zgromadzeń zgłoszonych w trybie art. 22 ustawy z dnia 24 lipca 2015r. Prawo o zgromadzeniach, a także ewentualne orzekanie o zakazie ich zorganizowania; 15) sprawowanie nadzoru nad działalnością fundacji i stowarzyszeń, posiadających swoje siedziby na terenie Miasta, z wyłączeniem stowarzyszeń jednostek samorządu terytorialnego, klubów sportowych działających w formie stowarzyszeń, których statuty nie przewidują prowadzenia działalności gospodarczej, oraz uczniowskich klubów sportowych; 16) prowadzenie spraw w zakresie udzielania pomocy finansowej z budżetu państwa repatriantom i pracodawcom tworzącym miejsca pracy dla repatriantów; 17) wykonywanie obsługi techniczno-organizacyjnej stanowiska Miejskiego Rzecznika Konsumentów; 18) przyjmowanie wniosków do CEIDG.",
+    "email": "wso@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "WUK",
+    "name": "Wydział Uprawnień Komunikacyjnych",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Uprawnień Komunikacyjnych należy: 1) dokonywanie rejestracji pojazdów; 2) wydawanie praw jazdy; 3) sprawowanie nadzoru nad stacjami kontroli pojazdów; 4) sprawowanie nadzoru nad ośrodkami szkolenia kandydatów na Kierowców; 5) udzielanie zezwoleń na wykonywanie zawodu przewoźnika drogowego osób, rzeczy; udzielanie licencji na wykonywanie krajowego transportu drogowego osób; udzielanie licencji na wykonywanie transportu drogowego w zakresie pośrednictwa przy przewozie rzeczy oraz wydawanie zaświadczeń na krajowy i niezarobkowy przewóz drogowy na potrzeby własne, 6) prowadzenie spraw związanych z usuwaniem pojazdów z ulic Miasta Bydgoszczy oraz przechowywaniem ich na wyznaczonych parkingach.",
+    "email": "wuk@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "WW",
+    "name": "Wydział Windykacji",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Windykacji należy: 1) windykacja podatków i opłat lokalnych, opłat za gospodarowanie odpadami komunalnymi oraz niepodatkowych należności Miasta, powiatu i Skarbu Państwa; 2) prowadzenie postępowań egzekucyjnych i egzekucji administracyjnej należności pieniężnych. Ważne: Poczta e-mail nie służy do wyjaśniania zaległości. Prosimy o kontakt telefoniczny lub złożenie podania za pośrednictwem adresu do doręczeń elektronicznych (ADE) albo na piśmie. Szczegółowe informacje na temat ADE dostępne są na stronie https://www.gov.pl/web/e-doreczenia Obowiązek informacyjny",
+    "email": "ww@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "WZP",
+    "name": "Wydział Zamówień Publicznych",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Zamówień Publicznych należy: 1) kompleksowa obsługa Urzędu w zakresie realizacji ustawy Prawo zamówień publicznych; 2) prowadzenie doradztwa i pomocy merytorycznej w sprawach zamówień publicznych.",
+    "email": "wzp@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "WZB",
+    "name": "Wydział Zarządzania Budżetem Miasta",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Zarządzania Budżetem Miasta należy: 1) planowanie budżetu Miasta i sporządzanie wieloletniej prognozy finansowej; 2) zarządzanie płynnością budżetu; 3) prowadzenie sprawozdawczości budżetowej i finansowej Miasta oraz ewidencji księgowej budżetu Miasta (organ). 4) obsługa IP FEdKP w zakresie aktualizacji planu oraz przepływów finansowych związanych z projektami realizowanymi przez beneficjentów BydOF, w tym współpraca z IZ.",
+    "email": "wzb@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "WZK",
+    "name": "Wydział Zarządzania Kryzysowego i Ochrony Ludności",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Zarządzania Kryzysowego i Ochrony Ludności należy: 1) organizowanie, wykonywanie, finansowanie, koordynowanie, nadzorowanie, kontrolowanie przedsięwzięć na rzecz realizacji zadań obronnych, zarządzania kryzysowego, ochrony ludności i obrony cywilnej; 2) opracowanie i wdrożenie kompleksowej dokumentacji planistycznej z zakresu obronności, zarządzania kryzysowego, ochrony ludności i obrony cywilnej; 3) bieżące monitorowanie sytuacji w zakresie bezpieczeństwa miasta Bydgoszczy, inicjowanie i koordynowanie przedsięwzięć w reakcji na powstałe zagrożenia i ich skutki; 4) realizacja zadań z zakresu ochrony przeciwpowodziowej miasta Bydgoszczy; 5) zapewnienie nadzoru i kontroli w zakresie realizacji zadań ochrony przeciwpożarowej Urzędu Miasta Bydgoszczy oraz miejskich jednostkach organizacyjnych; 6) organizowanie i bieżąca obsługa Komisji Bezpieczeństwa i Porządku dla Miasta Bydgoszczy i Powiatu Bydgoskiego oraz Bydgoskiego Zespołu Zarządzania Kryzysowego; 7) prowadzenie spraw związanych z łowiectwem i organizacją odławiania, leczenia i rehabilitacji chorych i rannych zwierząt wolno żyjących (dzikich) oraz zwierząt gospodarskich niewłaściwie traktowanych przez właścicieli, a także zbierania i utylizowania martwych zwierząt; 8) zapewnienie całodobowego funkcjonowania Bydgoskiego Centrum Zarządzania Kryzysowego oraz systemów technicznych, Monitoringu Wizyjnego Miasta, Centralnego Systemu Alarmowania Miasta oraz bazy magazynowej ochrony ludności, ochrony przeciwpowodziowej i zarządzania kryzysowego; 9) uruchamianie na podstawie upoważnienia Prezydenta Miasta Bydgoszczy systemów alarmowych i ostrzegawczych w tym syren alarmowych zlokalizowanych na obszarze miasta Bydgoszczy i powiatu Bydgoskiego, w przypadku nagłego, bezpośredniego zagrożenia militarnego, katastrofą naturalną, awarią techniczną lub innym zagrożeniem, gdy zwłoka mogłaby zagrażać utratą życia lub zdrowia ludzi; 10) wspieranie i obsługa finansowa Wodnego Ochotniczego Pogotowia Ratunkowego oraz Ochotniczej Straży Pożarnej; 11) realizacja obowiązków związanych ze zgromadzeniami organizowanymi w trybie uproszczonym; 12) sprawowanie w imieniu Prezydenta Miasta Bydgoszczy nadzoru merytorycznego nad Strażą Miejską oraz nadzoru Prezydenta Miasta Bydgoszczy nad Komendą Miejską Państwowej Straży Pożarnej oraz Komendy Miejskiej Policji.",
+    "email": "wzk@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "WGK",
+    "name": "Wydział Zieleni i Gospodarki Komunalnej",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Zieleni i Gospodarki Komunalnej należy: 1) zapewnienie utrzymania należytego stanu sanitarno-porządkowego i technicznego infrastruktury miasta ze szczególnym uwzględnieniem jego oczyszczania; 2) prowadzenie spraw w zakresie zieleni miejskiej i grobownictwa; 3) prowadzenie i koordynowanie spraw w zakresie targowisk miejskich; 4) prowadzenie spraw związanych z rybactwem śródlądowym oraz melioracjami wodnymi; 5) podejmowanie działań na rzecz ochrony przyrody; 6) prowadzenie spraw związanych z istnieniem na terenie miasta działalności rolniczej i leśnej; 7) nadzór nad gospodarowaniem mieszkaniowym zasobem Miasta, który został powierzony jednostce zajmującej się zarządzaniem tym zasobem; 8) kreowanie polityki mieszkaniowej poprzez przygotowanie aktów prawnych regulujących zasady przydzielania lokali mieszkalnych i gospodarowania zasobem dostosowując te działania do aktualnych potrzeb wynikających z sytuacji gospodarczej i społecznej Miasta.",
+    "email": "wgk@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "WSR",
+    "name": "Wydział Świadczeń Rodzinnych",
+    "kind": "Department",
+    "scope": "Do podstawowych zadań Wydziału Świadczeń Rodzinnych należy: 1) prowadzenie spraw związanych z dodatkami mieszkaniowymi i dodatkami energetycznymi; 2) prowadzenie spraw związanych ze świadczeniami rodzinnymi i zasiłkami dla opiekunów; 3) prowadzenie spraw związanych ze świadczeniami alimentacyjnymi; 4) realizacja zadań wynikających z ustawy z dnia 11 lutego 2016r. o pomocy państwa w wychowywaniu dzieci oraz rozporządzeń wykonawczych; 5) prowadzenie spraw związanych z pomocą materialną dla uczniów; 6) realizacja zadania wynikającego z ustawy z dnia 4 listopada 2016 r. o wsparciu kobiet w ciąży i rodzin „Za życiem” dotyczącego ustalania prawa i wypłaty jednorazowego świadczenia z tytułu urodzenia dziecka, u którego zdiagnozowano ciężkie i nieodwracalne upośledzenia oraz nieuleczalną chorobę zagrażającą jego życiu, które powstały w prenatalnym okresie rozwoju dziecka lub w czasie porodu oraz rozporządzeń wykonawczych do tej ustawy.",
+    "email": "wsr@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "BAS",
+    "name": "Biuro Aktywności Społecznej",
+    "kind": "Office",
+    "scope": "Do podstawowych zadań Biura Aktywności Społecznej należy: 1) realizacja projektów promujących aktywność społeczną w ramach trzeciego sektora w zakresie wolontariatu, polityki senioralnej, promocji rodziny, polityki równościowej i wielokulturowości; 2) prowadzenie Bydgoskiego Centrum Organizacji Pozarządowych „Gdańska 5”, Centrum Seniorów „Dworcowa 3” oraz Ogrodu Społecznika/Społeczniczki; 3) obsługa organów doradczych samorządu działających w obszarze tematycznym aktywności społecznej; 4) współpraca i wspieranie finansowe i pozafinansowe organizacji pozarządowych działających na terenie Bydgoszczy; 5) realizacja programów społecznych; 6) realizacja zadania „Urban Lab-Miasto dla Młodych” finansowanego ze środków Pomoc Techniczna dla Funduszy Europejskich 2021-2027.",
+    "email": "bas@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "BCB",
+    "name": "Biuro Cyfryzacji i Bezpieczeństwa Informacji",
+    "kind": "Office",
+    "scope": "Do podstawowych zadań Biura Cyfryzacji i Bezpieczeństwa Informacji należy: 1) zarządzanie, utrzymanie i rozwój systemu „Dbamy o Bydgoszcz” oraz Platformy Miejskiej, obejmujące nadzór nad ich funkcjonowaniem, współpracę z jednostkami i dostawcami, koordynację integracji i zmian, utrzymywanie treści i danych, obsługę zgłoszeń, analizę statystyk oraz przygotowywanie dokumentów, raportów i rekomendacji strategicznych, 2) tworzenie, nadzorowanie i rozwój elektronicznych usług dla mieszkańców. Koordynacja integracji systemów świadczących elektroniczne usługi dla mieszkańców. Tworzenie strategii zdalnej, elektronicznej obsługi mieszkańców, 3) komunikacja i współpraca z mieszkańcami oraz jednostkami miejskimi, obejmująca wsparcie użytkowników, prowadzenie działań informacyjnych, edukacyjnych i promocyjnych, rozpatrywanie reklamacji oraz inicjowanie działań usprawniających i rozwojowych w zakresie usług cyfrowych, 4) koordynowanie systemów zarządzania bezpieczeństwem informacji i ciągłością działania, nadzorowanie ryzyka oraz zgodności regulacyjnej, realizacja zadań w obszarze lobbingu i przeciwdziałania praniu pieniędzy, a także przygotowywanie analiz, raportów i rekomendacji oraz wspieranie komórek organizacyjnych poprzez działania doskonalące i szkolenia, 5) wspieranie Inspektora Ochrony Danych dla Urzędu Miasta Bydgoszczy oraz inspektorów ds. ochrony danych w publicznych jednostkach oświatowych Miasta Bydgoszczy.",
+    "email": "bcb@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "BKS",
+    "name": "Biuro Komunikacji Społecznej",
+    "kind": "Office",
+    "scope": "Do podstawowych zadań Biura Komunikacji Społecznej należy: 1) udostępnianie informacji publicznej, 2) prowadzenie strony podmiotowej Biuletynu Informacji Publicznej, 3) realizowanie projektów kierowanych do mieszkańców Miasta, 4) organizowanie obchodów, rocznic, uroczystości i świąt państwowych z udziałem Prezydenta, 5) koordynacja konsultacji społecznych przeprowadzanych w ramach Regulaminu „Bydgoskie Konsultacje”, 6) koordynacja programu Bydgoski Budżet Obywatelski, 7) koordynacja edukacji ekologicznej.",
+    "email": "bks@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "BKZ",
+    "name": "Biuro Konserwatora Zabytków",
+    "kind": "Office",
+    "scope": "Do podstawowych zadań Biura Konserwatora Zabytków – Miejskiego Konserwatora Zabytków należy: 1) przygotowywanie i realizowanie zadań w dziedzinie ochrony zabytków i opieki nad zabytkami; 2) prowadzenie gminnej ewidencji zabytków nieruchomych.",
+    "email": null
+  },
+  {
+    "symbol": "BKB",
+    "name": "Biuro Kultury Bydgoskiej",
+    "kind": "Office",
+    "scope": "Do podstawowych zadań Biura Kultury Bydgoskiej należy: 1) kompleksowa realizacja ustawowych zadań samorządu w zakresie rozwoju i upowszechniania kultury; 2) współpraca z bydgoskim środowiskiem twórczym, organizacjami pozarządowymi oraz innymi instytucjami realizującymi zadania z zakresu kultury.",
+    "email": "bkb@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "BPR",
+    "name": "Biuro Prasowe",
+    "kind": "Office",
+    "scope": "Do podstawowych zadań Biura Prasowego należy realizacja polityki informacyjnej Miasta.",
+    "email": null
+  },
+  {
+    "symbol": "BP",
+    "name": "Biuro Promocji Miasta i Współpracy z Zagranicą",
+    "kind": "Office",
+    "scope": "Do podstawowych zadań Biura Promocji Miasta i Współpracy z Zagranicą należy: 1) budowa wizerunku Miasta Bydgoszczy, 2) koordynacja i nadzór nad wykonywaniem zadań z zakresu promocji Miasta realizowanych przez wydziały i jednostki organizacyjne Miasta, 3) koordynacja współpracy międzynarodowej prowadzonej przez miasto Bydgoszcz.",
+    "email": "bp@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "BRM",
+    "name": "Biuro Rady Miasta",
+    "kind": "Office",
+    "scope": "Do podstawowych zadań Biura Rady Miasta należy: 1) obsługa organizacyjno-techniczna Rady i jej komisji 2) współpraca z RO w przygotowaniu wyborów; 3) przekazywanie uchwał Rady Miasta organom nadzoru; 4) przekazywanie do ogłoszenia w wojewódzkim Dzienniku Urzędowym uchwał Rady Miasta podlegających ogłoszeniu oraz przekazywanie uchwał właściwym komórkom organizacyjnym Urzędu Miasta w celu umieszczenia w prasie lub na tablicy ogłoszeń; 5) prowadzenie spraw związanych z nadawaniem Honorowego Obywatelstwa Miasta Bydgoszczy i Medalu Kazimierza Wielkiego za zasługi dla Miasta Bydgoszczy; 6) ewidencja przepisów prawa miejscowego.",
+    "email": "brm@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "BZIT",
+    "name": "Biuro ZIT",
+    "kind": "Office",
+    "scope": "Do podstawowych zadań Biura ZIT należy prowadzenie spraw związanych z wdrożeniem Zintegrowanych Inwestycji Terytorialnych na terenie Bydgoskiego Obszaru Funkcjonalnego.",
+    "email": "zit@um.bydgoszcz.pl"
+  },
+  {
+    "symbol": "BZS",
+    "name": "Biuro ds. Zdrowia i Polityki Społecznej",
+    "kind": "Office",
+    "scope": "Do podstawowych zadań Biura ds. Zdrowia i Polityki Społecznej należy: 1) koordynacja działań i realizacja polityki Miasta z obszaru zdrowia oraz określonych zagadnień społecznych; 2) inicjowanie i realizacja przedsięwzięć prozdrowotnych dla mieszkańców miasta; 3) określanie celów oraz przygotowywanie programów polityki zdrowotnej w oparciu o diagnozę sytuacji demograficzno-epidemiologicznej populacji miasta; 4) prowadzenie i koordynacja całości działań wynikających z realizacji programów polityki zdrowotnej; 5) współpraca z podmiotami i instytucjami działającymi na rzecz ochrony zdrowia i polityki społecznej, w tym w szczególności: Zakładem Opiekuńczo – Leczniczym, Bydgoskim Ośrodkiem Rehabilitacji, Terapii Uzależnień i Profilaktyki „BORPA”, Zespołem Żłobków Miejskich w Bydgoszczy, Miejskim Ośrodkiem Pomocy Społecznej, Zespołem Domów Pomocy Społecznej i Ośrodków Wsparcia, Bydgoskim Zespołem Placówek Opiekuńczo-Wychowawczych; 6) realizacja działań na rzecz osób z niepełnosprawnościami i ze szczególnymi potrzebami; 7) realizacja zadań wynikających z ustawy z dnia 19 lipca 2019 r. o zapewnieniu dostępności osobom ze szczególnymi potrzebami, w tym przygotowanie i koordynacja programu działań na rzecz osób z niepełnosprawnościami; 8) realizacja zadania: przewóz indywidualny osób z niepełnosprawnościami dla mieszkańców Bydgoszczy; 9) realizacja zadań wynikających z ustawy z dnia 4 lutego 2011 roku o opiece nad dziećmi w wieku do lat 3, w tym nadzór nad podmiotami prowadzącymi tego typu placówki; 10) kontrola nad organizatorem rodzinnej pieczy zastępczej, rodzinami zastępczymi prowadzącymi rodzinne domy dziecka oraz placówkami opiekuńczo-wychowawczymi; 11) kontrola nad podmiotami organizującymi pracę nad rodziną oraz placówkami wsparcia dziennego; 12) realizacja i koordynacja zadań wynikających z ustawy z dnia 5 sierpnia 2015 r. o nieodpłatnej pomocy prawnej, nieodpłatnego poradnictwa obywatelskiego oraz edukacji prawnej.",
+    "email": "bzs@um.bydgoszcz.pl"
+  }
+]
