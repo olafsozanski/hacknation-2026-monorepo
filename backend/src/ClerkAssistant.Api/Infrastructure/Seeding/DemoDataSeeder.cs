@@ -1,9 +1,12 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using ClerkAssistant.Api.Domain;
 using ClerkAssistant.Api.Features.Requests;
 using ClerkAssistant.Api.Infrastructure.Common;
+using ClerkAssistant.Api.Infrastructure.Letters;
 using ClerkAssistant.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -16,11 +19,17 @@ public sealed class DemoDataSeeder(
     UserManager<AppUser> users,
     CaseNumberGenerator numbers,
     AppClock clock,
+    IHostEnvironment environment,
     IOptions<SeedOptions> seedOptions,
     IOptions<OrganizationOptions> organizationOptions,
     ILogger<DemoDataSeeder> logger)
 {
     private static readonly TimeZoneInfo Warsaw = TimeZoneInfo.FindSystemTimeZoneById("Europe/Warsaw");
+
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new JsonStringEnumConverter() },
+    };
 
     private static readonly (string UserName, string FullName, string Initials)[] DemoClerks =
     [
@@ -48,22 +57,21 @@ public sealed class DemoDataSeeder(
         var clerks = await EnsureClerksAsync();
         var departments = await db.Departments.ToDictionaryAsync(d => d.Symbol);
         var today = clock.Today;
-        var plans = CurrentCases().Select(c => PlanCurrent(c, today))
+        var samples = (await LoadSampleCasesAsync()).Select(PlanSample).ToList();
+        var fictional = CurrentCases().Select(c => PlanCurrent(c, today))
             .Concat(ArchivedCases().Select(c => PlanArchived(c, today)))
             .OrderBy(p => p.ReceivedOn)
             .ToList();
+        NumberAfter(samples, fictional);
 
-        var sequences = new Dictionary<int, int>();
-        foreach (var plan in plans)
+        foreach (var plan in samples.Concat(fictional))
         {
-            var year = plan.ReceivedOn.Year;
-            var sequence = sequences[year] = sequences.GetValueOrDefault(year) + 1;
             var clerk = clerks.Count == 0 ? null : clerks[plan.Clerk % clerks.Count];
-            AddRequest(plan, sequence, clerk, departments, today);
+            AddRequest(plan, clerk, departments, today);
         }
 
         await db.SaveChangesAsync();
-        logger.LogInformation("Seeded {Count} demo requests", plans.Count);
+        logger.LogInformation("Seeded {Samples} sample and {Fictional} fictional demo requests", samples.Count, fictional.Count);
     }
 
     private async Task<List<AppUser>> EnsureClerksAsync()
@@ -105,15 +113,39 @@ public sealed class DemoDataSeeder(
         return clerks;
     }
 
-    private void AddRequest(RequestPlan plan, int sequence, AppUser? clerk, Dictionary<string, Department> departments, DateOnly today)
+    private async Task<SampleCase[]> LoadSampleCasesAsync()
+    {
+        var path = Path.Combine(environment.ContentRootPath, "Seed", "sample-cases.json");
+        if (!File.Exists(path))
+        {
+            logger.LogWarning("Sample cases file {Path} not found; only fictional demo requests are seeded.", path);
+            return [];
+        }
+
+        await using var stream = File.OpenRead(path);
+        var file = await JsonSerializer.DeserializeAsync<SampleCaseFile>(stream, JsonOptions);
+        return file?.Cases ?? [];
+    }
+
+    private void NumberAfter(IReadOnlyCollection<RequestPlan> numbered, IEnumerable<RequestPlan> plans)
+    {
+        var last = numbered.GroupBy(p => p.Year).ToDictionary(g => g.Key, g => g.Max(p => p.Sequence));
+        foreach (var plan in plans)
+        {
+            plan.Sequence = last[plan.Year] = last.GetValueOrDefault(plan.Year) + 1;
+            plan.CaseNumber = numbers.Format(plan.Sequence, plan.Year);
+        }
+    }
+
+    private void AddRequest(RequestPlan plan, AppUser? clerk, Dictionary<string, Department> departments, DateOnly today)
     {
         var userId = clerk?.Id ?? Guid.Empty;
         var request = new InfoRequest
         {
             Id = Guid.CreateVersion7(),
-            Year = plan.ReceivedOn.Year,
-            SequenceNumber = sequence,
-            CaseNumber = numbers.Format(sequence, plan.ReceivedOn.Year),
+            Year = plan.Year,
+            SequenceNumber = plan.Sequence,
+            CaseNumber = plan.CaseNumber,
             Subject = plan.Subject,
             Content = plan.Content,
             RequesterName = plan.RequesterName,
@@ -123,6 +155,7 @@ public sealed class DemoDataSeeder(
             DueOn = plan.DueOn,
             ExtendedDueOn = plan.ExtendedDueOn,
             ExtensionDays = plan.ExtensionDays,
+            ExtensionKind = plan.ExtensionKind,
             ExtensionReason = plan.ExtensionReason,
             RespondedOn = plan.RespondedOn,
             Status = plan.Status,
@@ -132,6 +165,7 @@ public sealed class DemoDataSeeder(
         };
         Audit(clerk, request.CreatedAt, "request.created", request.Id, request.CaseNumber);
 
+        var linked = new List<Department>();
         foreach (var link in plan.Links)
         {
             if (!departments.TryGetValue(link.Symbol, out var department))
@@ -139,6 +173,7 @@ public sealed class DemoDataSeeder(
                 continue;
             }
 
+            linked.Add(department);
             request.Departments.Add(new RequestDepartment
             {
                 DepartmentId = department.Id,
@@ -158,18 +193,21 @@ public sealed class DemoDataSeeder(
             }
         }
 
-        if (plan.ExtendedDueOn is { } extendedDueOn)
+        if (plan is { ExtendedDueOn: { } extendedDueOn, ExtensionKind: { } kind, ExtensionDays: { } days })
         {
-            Audit(clerk, At(Min(today, plan.DueOn.AddDays(-2)), 11), "request.extended", request.Id,
-                $"Nowy termin: {RequestLetters.ShortDate(extendedDueOn)} (+{plan.ExtensionDays} dni)");
+            var letterDate = Min(today, ExtensionLetterDate(plan, kind));
+            var letter = plan.ExtensionLetter ?? RequestLetters.ExtensionNotice(request, extendedDueOn, Organization, letterDate);
+            var title = kind == ExtensionKind.Clarification ? "Doprecyzowanie" : "Kwerenda";
+            request.Documents.Add(TextDocument(DocumentKind.Attachment, null, $"{title} - {request.CaseNumber}.txt", letter, At(letterDate, 11), userId));
+            Audit(clerk, At(letterDate, 11), "request.extended", request.Id, AuditDetails.Extension(kind, extendedDueOn, days));
         }
 
-        if (plan.Answer is { } answer)
+        var draft = plan.Draft ?? (plan.Answer is { } answer ? ResponseLetter(request, linked, plan.RespondedOn ?? today, answer) : null);
+        if (draft is not null)
         {
-            var letterDate = plan.RespondedOn ?? today;
             request.Draft = new ResponseDraft
             {
-                Content = ResponseLetter(request, letterDate, answer),
+                Content = draft,
                 GeneratedByAi = plan.RespondedOn is null,
                 UpdatedAt = At(plan.RespondedOn ?? today.AddDays(-1), 13),
                 UpdatedById = userId,
@@ -191,19 +229,24 @@ public sealed class DemoDataSeeder(
         db.Requests.Add(request);
     }
 
+    private static DateOnly ExtensionLetterDate(RequestPlan plan, ExtensionKind kind) =>
+        kind == ExtensionKind.Clarification
+            ? Min(plan.DueOn, Deadlines.NextWorkingDayOnOrAfter(plan.ReceivedOn.AddDays(5)))
+            : plan.DueOn;
+
     private RequestDocument ReplyDocument(
         InfoRequest request, Department department, DateOnly askedOn, DateOnly answeredOn, string reply, Guid userId)
     {
         var text = $"""
             {department.Name} ({department.Symbol})
-            {Organization.City}, dnia {RequestLetters.LongDate(answeredOn)} r.
+            {LetterLayout.PlaceAndDate(Organization, answeredOn)}
 
             {Organization.UnitName}
             w miejscu
 
             Dotyczy: wniosku o udostępnienie informacji publicznej, znak sprawy {request.CaseNumber}
 
-            W odpowiedzi na zapytanie z dnia {RequestLetters.LongDate(askedOn)} r. uprzejmie przekazuję następujące informacje.
+            W odpowiedzi na zapytanie z dnia {LetterLayout.LongDate(askedOn)} uprzejmie przekazuję następujące informacje.
 
             {reply}
 
@@ -211,16 +254,22 @@ public sealed class DemoDataSeeder(
             z up. Dyrektora
             [podpis]
             """;
+        return TextDocument(DocumentKind.DepartmentReply, department.Id,
+            $"odpowiedz_{department.Symbol}_{request.SequenceNumber}_{request.Year}.txt", text, At(answeredOn, 12), userId);
+    }
+
+    private static RequestDocument TextDocument(
+        DocumentKind kind, Guid? departmentId, string fileName, string text, DateTimeOffset uploadedAt, Guid userId)
+    {
         var content = Encoding.UTF8.GetBytes(text);
-        var uploadedAt = At(answeredOn, 12);
         return new RequestDocument
         {
             Id = Guid.CreateVersion7(),
-            Kind = DocumentKind.DepartmentReply,
-            DepartmentId = department.Id,
+            Kind = kind,
+            DepartmentId = departmentId,
             File = new StoredFile
             {
-                FileName = $"odpowiedz_{department.Symbol}_{request.SequenceNumber}_{request.Year}.txt",
+                FileName = fileName,
                 ContentType = "text/plain; charset=utf-8",
                 SizeBytes = content.LongLength,
                 Content = content,
@@ -234,29 +283,24 @@ public sealed class DemoDataSeeder(
         };
     }
 
-    private string ResponseLetter(InfoRequest request, DateOnly date, string answer) =>
-        $"""
-        {Organization.City}, dnia {RequestLetters.LongDate(date)} r.
-
-        {Organization.Name}
-        {Organization.UnitName}
-        {Organization.Address}
-
-        Znak sprawy: {request.CaseNumber}
-
-        {request.RequesterName}
-        {request.RequesterContact}
-
-        Odpowiedź na wniosek o udostępnienie informacji publicznej
-
-        W odpowiedzi na wniosek z dnia {RequestLetters.LongDate(request.ReceivedOn)} r. o udostępnienie informacji publicznej dotyczący: „{request.Subject}”, działając na podstawie art. 10 ust. 1 ustawy z dnia 6 września 2001 r. o dostępie do informacji publicznej, uprzejmie informuję, co następuje.
-
-        {answer}
-
-        Z poważaniem
-
-        [podpis osoby upoważnionej]
-        """;
+    private string ResponseLetter(InfoRequest request, IReadOnlyList<Department> departments, DateOnly date, string answer)
+    {
+        var addressee = LetterLayout.GuessAddressee(request.RequesterName);
+        var names = departments.Select(d => d.Name).ToList();
+        var source = names.Count switch
+        {
+            0 => "",
+            1 => $", na podstawie informacji przygotowanych przez komórkę merytoryczną, tj. {names[0]},",
+            _ => $", na podstawie informacji przygotowanych przez komórki merytoryczne, tj. {string.Join(", ", names[..^1])} oraz {names[^1]},",
+        };
+        return string.Join("\n\n",
+            LetterLayout.PlaceAndDate(Organization, date),
+            request.CaseNumber,
+            LetterLayout.Salutation(addressee),
+            $"w odpowiedzi na wystosowany {LetterLayout.ByYou(addressee)} wniosek o udostępnienie informacji publicznej dotyczący: „{request.Subject}”{source} uprzejmie informuję, co następuje.",
+            answer,
+            LetterLayout.Closing(Organization));
+    }
 
     private void Audit(AppUser? clerk, DateTimeOffset at, string action, Guid requestId, string details) =>
         db.AuditEntries.Add(new AuditEntry
@@ -270,6 +314,41 @@ public sealed class DemoDataSeeder(
             Details = details,
         });
 
+    private static RequestPlan PlanSample(SampleCase c)
+    {
+        var number = c.CaseNumber.Split('.');
+        var askedOn = Min(c.RespondedOn, Deadlines.NextWorkingDayOnOrAfter(c.ReceivedOn.AddDays(1)));
+        var answeredOn = Min(c.RespondedOn,
+            Deadlines.NextWorkingDayOnOrAfter(askedOn.AddDays((c.RespondedOn.DayNumber - askedOn.DayNumber) * 2 / 3)));
+        return new RequestPlan
+        {
+            Year = int.Parse(number[^1], CultureInfo.InvariantCulture),
+            Sequence = int.Parse(number[^2], CultureInfo.InvariantCulture),
+            CaseNumber = c.CaseNumber,
+            Subject = c.Subject,
+            Content = string.IsNullOrWhiteSpace(c.RequestText) ? c.Subject : c.RequestText.Trim(),
+            RequesterName = c.RequesterName,
+            RequesterContact = c.RequesterName?.Contains('@') == true ? c.RequesterName : null,
+            Channel = ReplyChannel.Email,
+            ReceivedOn = c.ReceivedOn,
+            DueOn = c.DueOn,
+            ExtendedDueOn = c.ExtendedDueOn,
+            ExtensionDays = c.ExtendedDueOn is { } extended ? extended.DayNumber - c.DueOn.DayNumber : null,
+            ExtensionKind = c.ExtendedDueOn is null ? null : c.ExtensionKind ?? ExtensionKind.Query,
+            ExtensionReason = c.ExtendedDueOn is null ? null : SampleExtensionReason(c.ExtensionKind ?? ExtensionKind.Query),
+            RespondedOn = c.RespondedOn,
+            Status = RequestStatus.ResponseSent,
+            Clerk = Math.Max(0, c.Assignee - 1),
+            Draft = c.ResponseText,
+            ExtensionLetter = c.ExtensionLetterText,
+            Links = c.Departments.Select(symbol => new LinkPlan(symbol, askedOn, answeredOn, null)).ToList(),
+        };
+    }
+
+    private static string SampleExtensionReason(ExtensionKind kind) => kind == ExtensionKind.Clarification
+        ? "Wezwanie wnioskodawcy do doprecyzowania zakresu wniosku."
+        : "Konieczność przeprowadzenia całościowej kwerendy w zakresie wnioskowanych danych.";
+
     private static RequestPlan PlanCurrent(CurrentCase c, DateOnly today)
     {
         var dueOn = today.AddDays(c.DueInDays);
@@ -278,6 +357,7 @@ public sealed class DemoDataSeeder(
         var year = today.Year;
         return new RequestPlan
         {
+            Year = receivedOn.Year,
             Subject = Fill(c.Subject, year),
             Content = Fill(c.Content, year),
             RequesterName = c.Requester,
@@ -287,6 +367,7 @@ public sealed class DemoDataSeeder(
             DueOn = dueOn,
             ExtendedDueOn = c.ExtensionDays is { } days ? Deadlines.ExtendedDueDate(dueOn, days) : null,
             ExtensionDays = c.ExtensionDays,
+            ExtensionKind = c.ExtensionDays is null ? null : ExtensionKind.Query,
             ExtensionReason = c.ExtensionReason,
             Status = c.Status,
             Clerk = c.Clerk,
@@ -316,6 +397,7 @@ public sealed class DemoDataSeeder(
         var year = receivedOn.Year;
         return new RequestPlan
         {
+            Year = year,
             Subject = Fill(c.Subject, year),
             Content = Fill(c.Content, year),
             RequesterName = c.Requester,
@@ -325,6 +407,7 @@ public sealed class DemoDataSeeder(
             DueOn = dueOn,
             ExtendedDueOn = extendedDueOn,
             ExtensionDays = c.ExtensionDays,
+            ExtensionKind = c.ExtensionDays is null ? null : ExtensionKind.Query,
             ExtensionReason = c.ExtensionReason is null ? null : Fill(c.ExtensionReason, year),
             RespondedOn = Min(respondedOn, extendedDueOn ?? dueOn),
             Status = RequestStatus.ResponseSent,
@@ -347,6 +430,23 @@ public sealed class DemoDataSeeder(
     private static DateOnly Min(DateOnly a, DateOnly b) => a < b ? a : b;
 
     private static DateOnly Max(DateOnly a, DateOnly b) => a > b ? a : b;
+
+    private sealed record SampleCaseFile(SampleCase[] Cases);
+
+    private sealed record SampleCase(
+        string CaseNumber,
+        string? RequesterName,
+        string Subject,
+        DateOnly ReceivedOn,
+        DateOnly DueOn,
+        DateOnly? ExtendedDueOn,
+        ExtensionKind? ExtensionKind,
+        DateOnly RespondedOn,
+        int Assignee,
+        string[] Departments,
+        string? RequestText,
+        string? ResponseText,
+        string? ExtensionLetterText);
 
     private sealed record CaseLink(string Symbol, int? AnsweredAfterDays = null, string? Reply = null);
 
@@ -381,20 +481,26 @@ public sealed class DemoDataSeeder(
 
     private sealed class RequestPlan
     {
+        public int Year { get; init; }
+        public int Sequence { get; set; }
+        public string CaseNumber { get; set; } = "";
         public required string Subject { get; init; }
         public required string Content { get; init; }
-        public required string RequesterName { get; init; }
-        public required string RequesterContact { get; init; }
+        public string? RequesterName { get; init; }
+        public string? RequesterContact { get; init; }
         public ReplyChannel Channel { get; init; }
         public DateOnly ReceivedOn { get; init; }
         public DateOnly DueOn { get; init; }
         public DateOnly? ExtendedDueOn { get; init; }
         public int? ExtensionDays { get; init; }
+        public ExtensionKind? ExtensionKind { get; init; }
         public string? ExtensionReason { get; init; }
         public DateOnly? RespondedOn { get; init; }
         public RequestStatus Status { get; init; }
         public int Clerk { get; init; }
         public string? Answer { get; init; }
+        public string? Draft { get; init; }
+        public string? ExtensionLetter { get; init; }
         public required List<LinkPlan> Links { get; init; }
     }
 

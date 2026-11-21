@@ -41,19 +41,41 @@ public class RequestWorkflowTests(ApiFactory factory) : IClassFixture<ApiFactory
         var after = await client.GetRequestAsync(id);
 
         Assert.Equal(new DateOnly(2026, 12, 30), result!.ExtendedDueOn);
-        Assert.StartsWith("Bydgoszcz, dnia 18 listopada 2026 r.", result.NoticeText);
-        Assert.Contains(before.CaseNumber, result.NoticeText);
-        Assert.Contains("Jan Testowy", result.NoticeText);
-        Assert.Contains("art. 13 ust. 2", result.NoticeText);
-        Assert.Contains("16 listopada 2026 r.", result.NoticeText);
-        Assert.Contains("„Wykaz umów na zimowe utrzymanie dróg”", result.NoticeText);
-        Assert.Contains("Konieczność kwerendy archiwalnej w trzech wydziałach.", result.NoticeText);
-        Assert.Contains("do dnia 30 grudnia 2026 r.", result.NoticeText);
-        Assert.Contains("Z poważaniem", result.NoticeText);
-        Assert.EndsWith("[podpis osoby upoważnionej]", result.NoticeText);
+        Assert.StartsWith(
+            $"URZĄD MIASTA BYDGOSZCZY\nBiuro Komunikacji Społecznej\n\nBydgoszcz, dnia 18 listopada 2026 r.\n\n{before.CaseNumber}\n\nSzanowny Panie,",
+            result.NoticeText);
+        Assert.Contains("„Wykaz umów na zimowe utrzymanie dróg”, ze względu na konieczność kwerendy archiwalnej w trzech wydziałach powiadamiam",
+            result.NoticeText);
+        Assert.Contains("termin udzielenia odpowiedzi: 30 grudnia 2026 r.", result.NoticeText);
+        Assert.DoesNotContain("WEZWANIE", result.NoticeText);
         Assert.Equal(RequestStatus.Extended, after.Status);
+        Assert.Equal(ExtensionKind.Query, after.ExtensionKind);
         Assert.Equal(new DateOnly(2026, 12, 30), after.EffectiveDueOn);
         Assert.Equal(30, after.ExtensionDays);
+    }
+
+    [Fact]
+    public async Task Clarification_extension_returns_call_to_clarify_and_is_audited_as_such()
+    {
+        factory.SetToday(Today);
+        var client = await factory.CreateAuthenticatedClientAsync();
+        var id = await client.CreateRequestAsync(NewRequest("Dokumentacja budowy hali", new DateOnly(2026, 11, 16)) with { RequesterName = "Ewa Górna" });
+        var before = await client.GetRequestAsync(id);
+
+        var response = await client.PostAsJsonAsync($"/api/requests/{id}/extension",
+            new ExtendDeadlineRequest(30, "proszę wskazać, o które akta sprawy chodzi", before.Version, ExtensionKind.Clarification),
+            ApiClient.Json, Ct);
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<ExtensionResult>(ApiClient.Json, Ct);
+        var after = await client.GetRequestAsync(id);
+        var history = await client.GetFromJsonAsync<HistoryItem[]>($"/api/requests/{id}/history", ApiClient.Json, Ct);
+
+        Assert.Contains("WEZWANIE DO DOPRECYZOWANIA\nZAKRESU OTRZYMANEGO WNIOSKU\n\nSzanowna Pani,", result!.NoticeText);
+        Assert.Contains("Proszę wskazać, o które akta sprawy chodzi.", result.NoticeText);
+        Assert.Contains("wskazując dzień 30 grudnia 2026 r.", result.NoticeText);
+        Assert.Equal(ExtensionKind.Clarification, after.ExtensionKind);
+        Assert.Equal("request.extended", history![0].Action);
+        Assert.Contains("wezwanie do doprecyzowania", history[0].Details);
     }
 
     [Fact]
@@ -92,7 +114,10 @@ public class RequestWorkflowTests(ApiFactory factory) : IClassFixture<ApiFactory
         var roomyDetail = await client.GetRequestAsync(roomy);
 
         Assert.Equal(new DateOnly(2026, 11, 25), roomyQuery!.ReplyBy);
+        Assert.Matches(@"^BKS\.IV\.1431\.\d+\.2026$", roomyDetail.CaseNumber);
         Assert.Contains(roomyDetail.CaseNumber, roomyQuery.Subject);
+        Assert.Contains("do 25 listopada 2026 r.", roomyQuery.Subject);
+        Assert.EndsWith("Łączę wyrazy szacunku,\nBiuro Komunikacji Społecznej\nUrząd Miasta Bydgoszczy", roomyQuery.Body);
         Assert.Contains("Wydział Zieleni i Gospodarki Komunalnej (WGK)", roomyQuery.Body);
         Assert.Contains("„Liczba koszy na śmieci”", roomyQuery.Body);
         Assert.Contains("do dnia 25 listopada 2026 r.", roomyQuery.Body);

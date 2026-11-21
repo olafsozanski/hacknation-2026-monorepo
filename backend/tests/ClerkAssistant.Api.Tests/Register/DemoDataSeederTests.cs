@@ -72,17 +72,105 @@ public class DemoDataSeederTests(DemoDataFactory factory) : IClassFixture<DemoDa
         await scope.ServiceProvider.GetRequiredService<DemoDataSeeder>().SeedAsync();
 
         Assert.Equal(before, await db.Requests.CountAsync(Ct));
-        var archived = await db.Requests.Include(r => r.Draft).Include(r => r.Departments)
-            .Where(r => r.Status == RequestStatus.ResponseSent).ToListAsync(Ct);
-        Assert.InRange(archived.Count, 18, 25);
-        Assert.All(archived, r =>
+        var fictionalArchive = await db.Requests.Include(r => r.Draft).Include(r => r.Departments)
+            .Where(r => r.Status == RequestStatus.ResponseSent && !SampleCaseNumbers.Contains(r.CaseNumber))
+            .ToListAsync(Ct);
+        Assert.InRange(fictionalArchive.Count, 18, 25);
+        Assert.All(fictionalArchive, r =>
         {
             Assert.NotNull(r.RespondedOn);
             Assert.True(r.RespondedOn <= r.EffectiveDueOn);
-            Assert.Contains(r.CaseNumber, r.Draft!.Content);
+            Assert.StartsWith($"Bydgoszcz, dnia {r.RespondedOn!.Value.Day} ", r.Draft!.Content);
+            Assert.Contains($"\n\n{r.CaseNumber}\n\n", r.Draft.Content);
+            Assert.EndsWith("Łączę wyrazy szacunku,\nBiuro Komunikacji Społecznej\nUrząd Miasta Bydgoszczy", r.Draft.Content);
             Assert.NotEmpty(r.Departments);
-            Assert.Null(r.Embedding);
         });
-        Assert.Equal(before, await db.Requests.Select(r => r.CaseNumber).Distinct().CountAsync(Ct));
+    }
+
+    [Fact]
+    public async Task Sample_cases_keep_their_real_case_numbers_and_letters()
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var samples = await db.Requests
+            .Include(r => r.Draft).Include(r => r.Documents).ThenInclude(d => d.File).Include(r => r.Departments).Include(r => r.Assignee)
+            .Where(r => SampleCaseNumbers.Contains(r.CaseNumber))
+            .ToDictionaryAsync(r => r.CaseNumber, Ct);
+
+        Assert.Equal(SampleCaseNumbers.Order(), samples.Keys.Order());
+        Assert.All(samples.Values, r =>
+        {
+            var parts = r.CaseNumber.Split('.');
+            Assert.Equal(int.Parse(parts[^2]), r.SequenceNumber);
+            Assert.Equal(int.Parse(parts[^1]), r.Year);
+            Assert.Equal(RequestStatus.ResponseSent, r.Status);
+            Assert.NotNull(r.RespondedOn);
+            Assert.All(r.Departments, l => Assert.True(l.AskedOn >= r.ReceivedOn && l.AnsweredOn >= l.AskedOn && l.AnsweredOn <= r.RespondedOn));
+            Assert.Contains(r.Assignee!.UserName, new[] { "akowalska", "pnowak" });
+            Assert.Empty(r.Draft?.Redactions ?? []);
+        });
+
+        var query = samples["BKS.IV.1431.543.2026"];
+        Assert.Equal(ExtensionKind.Query, query.ExtensionKind);
+        Assert.Equal(new DateOnly(2026, 9, 25), query.ExtendedDueOn);
+        Assert.Equal(28, query.ExtensionDays);
+        Assert.Null(query.Draft);
+        Assert.Equal(query.Subject, query.Content);
+        var queryLetter = Assert.Single(query.Documents);
+        Assert.Equal(DocumentKind.Attachment, queryLetter.Kind);
+        Assert.Equal("Kwerenda - BKS.IV.1431.543.2026.txt", queryLetter.File.FileName);
+        Assert.Contains("ostateczna odpowiedź nastąpi w terminie późniejszym", queryLetter.File.ExtractedText);
+
+        var clarification = samples["BKS.IV.1431.509.2026"];
+        Assert.Equal(ExtensionKind.Clarification, clarification.ExtensionKind);
+        Assert.Equal("Doprecyzowanie - BKS.IV.1431.509.2026.txt", Assert.Single(clarification.Documents).File.FileName);
+        Assert.Null(clarification.Draft);
+        Assert.Null(samples["BKS.IV.1431.599.2026"].Draft);
+
+        Assert.StartsWith("Bydgoszcz, dnia 14 stycznia 2026 r.", samples["BKS.IV.1431.15.2026"].Draft!.Content);
+        Assert.Equal("Antoni Ptak, Stowarzyszenie Obrony Zwierzątek", samples["BKS.IV.1431.293.2025"].RequesterName);
+        Assert.Equal("abcxyz@jahu.komm", samples["BKS.IV.1431.17.2026"].RequesterContact);
+    }
+
+    [Fact]
+    public async Task Fictional_requests_are_numbered_after_the_highest_real_sequence()
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var all = await db.Requests.Select(r => new { r.Year, r.SequenceNumber, r.CaseNumber, r.Status }).ToListAsync(Ct);
+        var fictional = all.Where(r => !SampleCaseNumbers.Contains(r.CaseNumber)).ToList();
+
+        Assert.Equal(all.Count, all.Select(r => (r.Year, r.SequenceNumber)).Distinct().Count());
+        Assert.All(fictional, r => Assert.Equal($"BKS.IV.1431.{r.SequenceNumber}.{r.Year}", r.CaseNumber));
+        Assert.All(fictional.Where(r => r.Year == 2026), r => Assert.True(r.SequenceNumber > 599));
+        Assert.All(fictional.Where(r => r.Year == 2025), r => Assert.True(r.SequenceNumber > 307));
+        var open = fictional.Where(r => r.Status != RequestStatus.ResponseSent).Select(r => r.SequenceNumber).ToList();
+        var archived = fictional.Where(r => r.Status == RequestStatus.ResponseSent && r.Year == 2026).Select(r => r.SequenceNumber).ToList();
+        Assert.True(open.Min() > archived.Max());
+    }
+
+    internal static readonly string[] SampleCaseNumbers =
+    [
+        "BKS.IV.1431.293.2025", "BKS.IV.1431.307.2025", "BKS.IV.1431.15.2026", "BKS.IV.1431.16.2026", "BKS.IV.1431.17.2026",
+        "BKS.IV.1431.18.2026", "BKS.IV.1431.509.2026", "BKS.IV.1431.543.2026", "BKS.IV.1431.590.2026", "BKS.IV.1431.599.2026",
+    ];
+}
+
+public class DemoDataNumberingTests(DemoDataFactory factory) : IClassFixture<DemoDataFactory>
+{
+    [Fact]
+    public async Task New_request_continues_after_the_last_demo_case_number()
+    {
+        var client = await factory.CreateAuthenticatedClientAsync("mwisniewska", DemoDataFactory.DemoPassword);
+        var list = (await client.GetFromJsonAsync<RequestListItem[]>("/api/requests?year=2026", ApiClient.Json, Ct))!;
+        var highest = list.Where(r => r.CaseNumber.EndsWith(".2026", StringComparison.Ordinal)).Max(r => r.SequenceNumber);
+
+        var created = await client.GetRequestAsync(await client.CreateRequestAsync("Nowy wniosek po danych demonstracyjnych", new DateOnly(2026, 11, 20)));
+
+        Assert.True(highest > 599);
+        Assert.Equal(highest + 1, created.SequenceNumber);
+        Assert.Equal($"BKS.IV.1431.{highest + 1}.2026", created.CaseNumber);
     }
 }

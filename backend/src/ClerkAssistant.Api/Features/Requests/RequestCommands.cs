@@ -9,6 +9,9 @@ namespace ClerkAssistant.Api.Features.Requests;
 
 public static class RequestCommands
 {
+    private const string SubjectLabel = "przedmiot";
+    private const string ContentLabel = "treść";
+
     public static async Task<Results<Created<CreatedResponse>, ValidationProblem>> Create(
         CreateRequestRequest body,
         AppDbContext db,
@@ -126,16 +129,12 @@ public static class RequestCommands
 
         db.ExpectVersion(request, body.Version, clock.Now);
         var changed = Apply(request, body, caseNumber);
-        if (changed.Contains(SubjectLabel) || changed.Contains(ContentLabel))
-        {
-            await db.RequestEmbeddings.Where(e => e.RequestId == id).ExecuteDeleteAsync(ct);
-        }
-
         if (changed.Count > 0)
         {
             audit.Record("request.updated", nameof(InfoRequest), id, AuditDetails.ChangedFields(changed));
         }
 
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
         try
         {
             await db.SaveChangesAsync(ct);
@@ -145,6 +144,12 @@ public static class RequestCommands
             return ValidationErrors.Single("caseNumber", RequestRules.DuplicateCaseNumber(caseNumber));
         }
 
+        if (changed.Contains(SubjectLabel) || changed.Contains(ContentLabel))
+        {
+            await db.RequestEmbeddings.Where(e => e.RequestId == id).ExecuteDeleteAsync(ct);
+        }
+
+        await transaction.CommitAsync(ct);
         return TypedResults.Ok((await RequestDetails.LoadAsync(db, id, clock.Today, ct))!);
     }
 
@@ -229,8 +234,7 @@ public static class RequestCommands
         request.ExtensionReason = body.Reason.Trim();
         request.Status = RequestStatus.Extended;
         request.ExtensionKind = body.Kind;
-        audit.Record("request.extended", nameof(InfoRequest), id,
-            $"Nowy termin: {RequestLetters.ShortDate(extendedDueOn)} (+{body.Days} dni)");
+        audit.Record("request.extended", nameof(InfoRequest), id, AuditDetails.Extension(body.Kind, extendedDueOn, body.Days));
         await db.SaveChangesAsync(ct);
 
         var notice = RequestLetters.ExtensionNotice(request, extendedDueOn, organization.Value, clock.Today);
@@ -249,9 +253,6 @@ public static class RequestCommands
 
         return (sequence, caseNumber);
     }
-
-    private const string SubjectLabel = "przedmiot";
-    private const string ContentLabel = "treść";
 
     private static List<string> Apply(InfoRequest request, UpdateRequestRequest body, string caseNumber)
     {

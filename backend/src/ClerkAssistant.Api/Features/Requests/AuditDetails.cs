@@ -14,6 +14,16 @@ public static class AuditDetails
         _ => status.ToString(),
     };
 
+    public static string ExtensionKindLabel(ExtensionKind kind) => kind switch
+    {
+        ExtensionKind.Query => "kwerenda",
+        ExtensionKind.Clarification => "wezwanie do doprecyzowania wniosku",
+        _ => kind.ToString(),
+    };
+
+    public static string Extension(ExtensionKind kind, DateOnly extendedDueOn, int days) =>
+        $"Przedłużenie terminu ({ExtensionKindLabel(kind)}): nowy termin {RequestLetters.ShortDate(extendedDueOn)} (+{days} dni)";
+
     public static string StatusChange(RequestStatus from, RequestStatus to) =>
         $"Status: {StatusLabel(from)} → {StatusLabel(to)}";
 
