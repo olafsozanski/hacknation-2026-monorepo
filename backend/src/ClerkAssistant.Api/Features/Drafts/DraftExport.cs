@@ -9,6 +9,8 @@ using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace ClerkAssistant.Api.Features.Drafts;
 
+public sealed record FileDownload(byte[] Content, string ContentType, string FileName);
+
 public static partial class DraftExport
 {
     public const string Docx = "docx";
@@ -71,6 +73,11 @@ public static partial class DraftExport
 
         return $"{(safe.Length == 0 ? "dokument" : safe)}-zanonimizowany.{extension}";
     }
+
+    public static FileDownload ToFile(string text, string format, string title, string fileName) => new(
+        format == Docx ? ToDocx(text, title) : ToTxt(text),
+        ContentType(format),
+        fileName);
 
     public static byte[] ToTxt(string text) => Encoding.UTF8.GetBytes(text);
 

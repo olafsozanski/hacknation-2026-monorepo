@@ -14,6 +14,6 @@ public record AnonymizationResult(
 
 public record AnonymizationExportRequest(
     [property: Required, MaxLength(500_000)] string Content,
-    [property: Required] Redaction[] Redactions,
+    [property: Required, MaxLength(RedactionSet.MaxRedactions)] Redaction[] Redactions,
     [property: MaxLength(8)] string? Format,
     [property: MaxLength(255)] string? FileName);

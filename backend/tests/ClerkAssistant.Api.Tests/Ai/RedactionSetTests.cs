@@ -37,7 +37,7 @@ public class RedactionSetTests
         Assert.All(existing, r => Assert.Equal(r.Text, before.Substring(r.Start, r.Length)));
         const string after = "Szanowni Państwo, Jan Kowalski prosi o informację. Jan Kowalski.";
 
-        var relocated = RedactionSet.Relocate(after, existing);
+        var relocated = RedactionSet.Relocate(after, existing, TestContext.Current.CancellationToken);
 
         Assert.Equal(2, relocated.Count);
         Assert.Equal((18, RedactionStatus.Approved, RedactionSource.Manual), (relocated[0].Start, relocated[0].Status, relocated[0].Source));
@@ -57,7 +57,7 @@ public class RedactionSetTests
         [
             Redaction(7, 3, RedactionSource.Rule),
             Redaction(20, 3, RedactionSource.Ai),
-        ]);
+        ], TestContext.Current.CancellationToken);
 
         Assert.Equal([(5, RedactionStatus.Rejected), (20, RedactionStatus.Suggested)], result.Select(r => (r.Start, r.Status)));
     }
@@ -107,6 +107,39 @@ public class RedactionSetTests
     [InlineData("BKS/1431 Ł.7", "txt", "BKS-1431---7-odpowiedz.txt")]
     public void Export_file_name_is_derived_from_case_number(string caseNumber, string extension, string expected) =>
         Assert.Equal(expected, DraftExport.FileName(caseNumber, extension));
+
+    [Fact]
+    public void Relocation_of_many_colliding_redactions_stays_bounded_and_non_overlapping()
+    {
+        var content = new string('a', 200_000);
+        var existing = Enumerable.Range(0, RedactionSet.MaxRedactions + 100)
+            .Select(_ => new Redaction(0, 1, "a", RedactionCategory.Other, RedactionStatus.Approved, RedactionSource.Manual))
+            .ToList();
+
+        var relocated = RedactionSet.Relocate(content, existing, TestContext.Current.CancellationToken);
+        var (text, replaced) = RedactionSet.ApplyApproved(content, relocated);
+
+        Assert.InRange(relocated.Count, 1, RedactionSet.MaxRedactions);
+        for (var i = 1; i < relocated.Count; i++)
+        {
+            Assert.True(relocated[i - 1].Start + relocated[i - 1].Length <= relocated[i].Start);
+        }
+
+        Assert.Equal(relocated.Count, replaced);
+        Assert.Equal(content.Length + replaced * (RedactionSet.Placeholder.Length - 1), text.Length);
+    }
+
+    [Fact]
+    public void Relocation_honours_cancellation()
+    {
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+
+        Assert.Throws<OperationCanceledException>(() => RedactionSet.Relocate(
+            "Jan Kowalski",
+            [new Redaction(0, 12, "Jan Kowalski", RedactionCategory.PersonName, RedactionStatus.Approved, RedactionSource.Manual)],
+            cancelled.Token));
+    }
 
     private static Redaction Redaction(int start, int length, RedactionSource source) =>
         new(start, length, new string('x', length), RedactionCategory.Other, RedactionStatus.Suggested, source);

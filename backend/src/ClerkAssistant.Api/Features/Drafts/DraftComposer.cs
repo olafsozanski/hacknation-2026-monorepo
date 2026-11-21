@@ -12,7 +12,8 @@ using Microsoft.Extensions.Options;
 
 namespace ClerkAssistant.Api.Features.Drafts;
 
-public sealed record DraftComposition(string Content, bool AiUsed, List<string> Warnings, KnownPersonalData Requester);
+public sealed record DraftComposition(
+    string Content, bool AiUsed, List<string> Warnings, KnownPersonalData Requester, IReadOnlyList<string> Sources);
 
 internal sealed record DraftAnswer(string? Addressee, double? AddresseeConfidence, string? Body);
 
@@ -94,7 +95,11 @@ public sealed partial class DraftComposer(
         }
 
         return new DraftComposition(
-            content, answer is not null, warnings, new KnownPersonalData(request.RequesterName, request.RequesterContact));
+            content,
+            answer is not null,
+            warnings,
+            new KnownPersonalData(request.RequesterName, request.RequesterContact),
+            [request.Content, .. replies.Select(r => r.Text)]);
     }
 
     public static string CleanModelBody(string text)

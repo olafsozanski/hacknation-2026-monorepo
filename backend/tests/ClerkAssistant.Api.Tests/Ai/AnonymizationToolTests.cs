@@ -86,6 +86,12 @@ public class AnonymizationToolTests(AiApiFactory factory) : IClassFixture<AiApiF
             Assert.DoesNotContain("44051401359", body);
         }
 
+        var analyzedAudit = await factory.QueryAsync(db => db.AuditEntries
+            .Where(a => a.Action == "anonymization.analyzed" && a.Details == "plik")
+            .Select(a => new { a.EntityType, a.EntityId })
+            .ToListAsync(Ct));
+        Assert.Equal([("Document", (Guid?)null)], analyzedAudit.Select(a => (a.EntityType, a.EntityId)));
+
         var audit = await factory.QueryAsync(db => db.AuditEntries
             .Where(a => a.Action == "anonymization.exported")
             .OrderBy(a => a.Id)
@@ -108,6 +114,8 @@ public class AnonymizationToolTests(AiApiFactory factory) : IClassFixture<AiApiF
         var result = (await response.Content.ReadFromJsonAsync<AnonymizationResult>(ApiClient.Json, Ct))!;
         Assert.Null(result.FileName);
         Assert.DoesNotContain("\r", result.Text);
+        Assert.True(await factory.QueryAsync(db => db.AuditEntries.AnyAsync(
+            a => a.Action == "anonymization.analyzed" && a.Details == "tekst" && a.EntityType == "Document", Ct)));
         Assert.Equal(
             ["Anna Nowak", "12.03.1980 r. w Toruniu", "CT 9876A"],
             result.Redactions.Select(r => r.Text));
@@ -124,7 +132,7 @@ public class AnonymizationToolTests(AiApiFactory factory) : IClassFixture<AiApiF
 
         var result = (await response.Content.ReadFromJsonAsync<AnonymizationResult>(ApiClient.Json, Ct))!;
         Assert.Empty(result.Redactions);
-        Assert.Equal([AnonymizationEndpoints.NothingFoundWarning], result.Warnings);
+        Assert.Equal([AnonymizationService.NothingFoundWarning], result.Warnings);
     }
 
     [Fact]

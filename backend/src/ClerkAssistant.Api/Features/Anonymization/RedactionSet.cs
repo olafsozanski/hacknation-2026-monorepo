@@ -6,6 +6,8 @@ namespace ClerkAssistant.Api.Features.Anonymization;
 public static class RedactionSet
 {
     public const string Placeholder = "[dane zanonimizowane]";
+    public const int MaxRedactions = 5000;
+    private const int MaxOccurrenceProbes = 64;
 
     public static List<Redaction> Merge(IEnumerable<Redaction> candidates)
     {
@@ -34,11 +36,12 @@ public static class RedactionSet
         return merged;
     }
 
-    public static List<Redaction> Relocate(string content, IEnumerable<Redaction> existing)
+    public static List<Redaction> Relocate(string content, IEnumerable<Redaction> existing, CancellationToken ct = default)
     {
-        var placed = new List<Redaction>();
-        foreach (var redaction in existing.Where(r => !string.IsNullOrEmpty(r.Text)).OrderBy(r => r.Start))
+        var placed = new IntervalSet();
+        foreach (var redaction in existing.Where(r => !string.IsNullOrEmpty(r.Text)).OrderBy(r => r.Start).Take(MaxRedactions))
         {
+            ct.ThrowIfCancellationRequested();
             var start = NearestFreeOccurrence(content, redaction, placed);
             if (start >= 0)
             {
@@ -46,27 +49,32 @@ public static class RedactionSet
             }
         }
 
-        return placed.OrderBy(r => r.Start).ToList();
+        return placed.ToList();
     }
 
-    public static List<Redaction> AddSuggestions(IEnumerable<Redaction> placed, IEnumerable<Redaction> suggestions)
+    public static List<Redaction> AddSuggestions(
+        IEnumerable<Redaction> placed, IEnumerable<Redaction> suggestions, CancellationToken ct = default)
     {
-        var result = placed.ToList();
-        foreach (var suggestion in suggestions)
+        var result = new IntervalSet();
+        foreach (var redaction in placed)
         {
-            if (!result.Any(r => Overlaps(r, suggestion)))
-            {
-                result.Add(suggestion);
-            }
+            result.TryAdd(redaction);
         }
 
-        return result.OrderBy(r => r.Start).ToList();
+        foreach (var suggestion in suggestions)
+        {
+            ct.ThrowIfCancellationRequested();
+            result.TryAdd(suggestion);
+        }
+
+        return result.ToList();
     }
 
     public static List<Redaction> Sanitize(string content, IEnumerable<Redaction?> redactions)
     {
         var valid = redactions
             .OfType<Redaction>()
+            .Take(MaxRedactions)
             .Where(r => IsValid(content, r))
             .OrderBy(r => r.Start)
             .ThenByDescending(r => r.Length);
@@ -96,12 +104,15 @@ public static class RedactionSet
     public static (string Text, int Replaced) ApplyApproved(string content, IEnumerable<Redaction> redactions)
     {
         var approved = Sanitize(content, redactions.Where(r => r.Status == RedactionStatus.Approved));
-        var builder = new StringBuilder(content);
-        foreach (var redaction in approved.OrderByDescending(r => r.Start))
+        var builder = new StringBuilder(content.Length);
+        var position = 0;
+        foreach (var redaction in approved)
         {
-            builder.Remove(redaction.Start, redaction.Length).Insert(redaction.Start, Placeholder);
+            builder.Append(content, position, redaction.Start - position).Append(Placeholder);
+            position = End(redaction);
         }
 
+        builder.Append(content, position, content.Length - position);
         return (builder.ToString(), approved.Count);
     }
 
@@ -109,23 +120,47 @@ public static class RedactionSet
 
     private static int End(Redaction r) => r.Start + r.Length;
 
-    private static int NearestFreeOccurrence(string content, Redaction redaction, List<Redaction> placed)
+    private static int NearestFreeOccurrence(string content, Redaction redaction, IntervalSet placed)
     {
-        var best = -1;
-        var index = content.IndexOf(redaction.Text, StringComparison.Ordinal);
-        while (index >= 0)
+        var anchor = Math.Clamp(redaction.Start, 0, content.Length);
+        var after = FirstFree(content, redaction.Text, placed, anchor, forward: true);
+        var before = FirstFree(content, redaction.Text, placed, anchor - 1, forward: false);
+        if (after < 0 || before < 0)
         {
-            var candidate = redaction with { Start = index, Length = redaction.Text.Length };
-            if (!placed.Any(p => Overlaps(p, candidate))
-                && (best < 0 || Math.Abs(index - redaction.Start) < Math.Abs(best - redaction.Start)))
-            {
-                best = index;
-            }
-
-            index = content.IndexOf(redaction.Text, index + 1, StringComparison.Ordinal);
+            return Math.Max(after, before);
         }
 
-        return best;
+        return after - anchor <= anchor - before ? after : before;
+    }
+
+    private static int FirstFree(string content, string text, IntervalSet placed, int from, bool forward)
+    {
+        var index = forward ? NextOccurrence(content, text, from) : PreviousOccurrence(content, text, from);
+        for (var probe = 0; index >= 0 && probe < MaxOccurrenceProbes; probe++)
+        {
+            if (!placed.Overlaps(index, text.Length))
+            {
+                return index;
+            }
+
+            index = forward ? NextOccurrence(content, text, index + 1) : PreviousOccurrence(content, text, index - 1);
+        }
+
+        return -1;
+    }
+
+    private static int NextOccurrence(string content, string text, int from) =>
+        from < 0 || from > content.Length - text.Length ? -1 : content.IndexOf(text, from, StringComparison.Ordinal);
+
+    private static int PreviousOccurrence(string content, string text, int startAtOrBefore)
+    {
+        if (startAtOrBefore < 0 || content.Length < text.Length)
+        {
+            return -1;
+        }
+
+        var lastStart = Math.Min(startAtOrBefore, content.Length - text.Length);
+        return content.LastIndexOf(text, lastStart + text.Length - 1, StringComparison.Ordinal);
     }
 
     private static int Priority(RedactionSource source) => source switch
@@ -134,4 +169,45 @@ public static class RedactionSet
         RedactionSource.Rule => 1,
         _ => 2,
     };
+
+    private sealed class IntervalSet
+    {
+        private readonly SortedSet<Redaction> _items = new(Comparer<Redaction>.Create((a, b) =>
+            a.Start != b.Start ? a.Start.CompareTo(b.Start) : a.Length.CompareTo(b.Length)));
+
+        public bool Overlaps(int start, int length)
+        {
+            if (_items.Count == 0)
+            {
+                return false;
+            }
+
+            var before = _items.Min!.Start <= start ? _items.GetViewBetween(_items.Min, Probe(start, int.MaxValue)).Max : null;
+            if (before is not null && before.Start + before.Length > start)
+            {
+                return true;
+            }
+
+            var after = _items.Max!.Start > start ? _items.GetViewBetween(Probe(start + 1, 0), _items.Max).Min : null;
+            return after is not null && after.Start < start + length;
+        }
+
+        private static Redaction Probe(int start, int length) =>
+            new(start, length, "", RedactionCategory.Other, RedactionStatus.Suggested, RedactionSource.Rule);
+
+        public void Add(Redaction redaction) => _items.Add(redaction);
+
+        public bool TryAdd(Redaction redaction)
+        {
+            if (redaction.Length <= 0 || Overlaps(redaction.Start, redaction.Length))
+            {
+                return false;
+            }
+
+            _items.Add(redaction);
+            return true;
+        }
+
+        public List<Redaction> ToList() => _items.ToList();
+    }
 }

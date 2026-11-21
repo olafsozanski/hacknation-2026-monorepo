@@ -23,14 +23,14 @@ public static partial class IntakeHeuristics
         "godz", "zł", "ok", "tys", "mln", "ws",
     };
 
-    public static IntakeSuggestion Analyze(
+    public static RequestExtraction Analyze(
         string text, DateOnly today, IReadOnlyCollection<string> institutionalDomains, string? organizationAddress)
     {
         var lines = text.Split('\n').Select(l => l.Trim()).ToList();
         var items = RequestedItems(lines);
         var subject = Subject(text, lines, items);
         var isRequest = LooksLikePublicInformationRequest(text);
-        return new IntakeSuggestion(
+        return new RequestExtraction(
             subject,
             RequesterName(lines),
             RequesterContact(text, lines, institutionalDomains, organizationAddress),

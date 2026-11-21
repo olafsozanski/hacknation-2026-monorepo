@@ -5,7 +5,10 @@ namespace ClerkAssistant.Api.Features.Anonymization;
 
 public sealed record KnownPersonalData(string? Name, string? Contact);
 
-public sealed record DetectionOutcome(List<Redaction> Suggestions, string[] Warnings, bool AiUsed);
+public sealed record DetectionOutcome(List<Redaction> Suggestions, string[] Warnings, bool AiUsed)
+{
+    public bool AiFoundNothing { get; init; }
+}
 
 internal sealed record PersonalDataAnswer(List<PersonalDataItem>? Items);
 
@@ -51,7 +54,11 @@ public sealed class RedactionDetector(AiGateway ai, PublicContactFilter publicCo
         {PromptText.UntrustedDataRule}
         """;
 
-    public async Task<DetectionOutcome> DetectAsync(string content, KnownPersonalData? known, CancellationToken ct)
+    public Task<DetectionOutcome> DetectAsync(string content, KnownPersonalData? known, CancellationToken ct) =>
+        DetectAsync(content, known, [], ct);
+
+    public async Task<DetectionOutcome> DetectAsync(
+        string content, KnownPersonalData? known, IReadOnlyCollection<string> sources, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(content))
         {
@@ -60,11 +67,14 @@ public sealed class RedactionDetector(AiGateway ai, PublicContactFilter publicCo
 
         var candidates = PersonalDataRules.Detect(content);
         candidates.AddRange(KnownValues(content, known));
+        candidates.AddRange(FromSources(content, sources, ct));
 
         var warnings = new List<string>();
         var aiUsed = false;
+        var aiItems = 0;
         foreach (var window in AiWindows(content))
         {
+            ct.ThrowIfCancellationRequested();
             var answer = await ai.GetStructuredAsync<PersonalDataAnswer>(
                 "detect-personal-data", SystemPrompt, PromptText.Wrap("dokument", window, AiWindowLength), ct);
             if (answer.Failed)
@@ -76,6 +86,7 @@ public sealed class RedactionDetector(AiGateway ai, PublicContactFilter publicCo
             if (answer.Value is { } value)
             {
                 aiUsed = true;
+                aiItems += value.Items?.Count ?? 0;
                 candidates.AddRange(Locate(content, value));
             }
         }
@@ -86,7 +97,25 @@ public sealed class RedactionDetector(AiGateway ai, PublicContactFilter publicCo
         }
 
         return new DetectionOutcome(
-            RedactionSet.Merge(candidates.Where(c => !publicContacts.IsPublic(c))), warnings.ToArray(), aiUsed);
+            RedactionSet.Merge(candidates.Where(c => !publicContacts.IsPublic(c))), warnings.ToArray(), aiUsed)
+        {
+            AiFoundNothing = aiUsed && aiItems == 0,
+        };
+    }
+
+    private IEnumerable<Redaction> FromSources(string content, IReadOnlyCollection<string> sources, CancellationToken ct)
+    {
+        var values = new Dictionary<string, RedactionCategory>(StringComparer.Ordinal);
+        foreach (var source in sources.Where(s => !string.IsNullOrWhiteSpace(s)))
+        {
+            ct.ThrowIfCancellationRequested();
+            foreach (var found in PersonalDataRules.Detect(source).Where(r => !publicContacts.IsPublic(r)))
+            {
+                values.TryAdd(found.Text, found.Category);
+            }
+        }
+
+        return values.SelectMany(v => PersonalDataRules.FindOccurrences(content, v.Key, v.Value, RedactionSource.Rule));
     }
 
     private IEnumerable<string> AiWindows(string content)

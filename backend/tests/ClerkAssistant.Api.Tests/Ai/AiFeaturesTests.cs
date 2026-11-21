@@ -244,7 +244,7 @@ public class AiFeaturesTests(AiApiFactory factory) : IClassFixture<AiApiFactory>
         var oldHit = Assert.Single(hits!, h => h.Id == old);
         Assert.True(recentHit.Score > oldHit.Score);
         Assert.DoesNotContain(hits!, h => h.Id == target);
-        Assert.True(hits!.Length <= SearchEndpoints.SimilarCasesLimit);
+        Assert.True(hits!.Length <= SearchService.SimilarCasesLimit);
         Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
     }
 

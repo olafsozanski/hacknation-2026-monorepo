@@ -5,28 +5,21 @@ using ClerkAssistant.Api.Features.Routing;
 using ClerkAssistant.Api.Features.Search;
 using ClerkAssistant.Api.Infrastructure.Ai;
 using ClerkAssistant.Api.Infrastructure.Common;
+using ClerkAssistant.Api.Infrastructure.Documents;
 using ClerkAssistant.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace ClerkAssistant.Api.Features.Intake;
 
-internal sealed record IntakeExtraction(
-    string? Subject,
-    string? RequesterName,
-    string? RequesterContact,
-    string? ReplyChannel,
-    string? RequestDate,
-    List<string>? RequestedItems,
-    bool IsPublicInformationRequest,
-    string? Remarks);
-
-public sealed class IntakeAnalyzer(
+public sealed class IntakeService(
     AppDbContext db,
     AiGateway ai,
     HybridSearch search,
     DepartmentRouter router,
     CaseNumberGenerator caseNumbers,
+    DocumentReader reader,
+    CurrentUser user,
     AppClock clock,
     IOptions<OrganizationOptions> organization)
 {
@@ -37,17 +30,33 @@ public sealed class IntakeAnalyzer(
     private const int SimilarCasesLimit = 5;
     private const int MaxTextInPrompt = 12_000;
 
-    private static readonly IntakeSuggestion EmptySuggestion = new(null, null, null, null, null, [], false, null);
+    public async Task<IntakeResult> AnalyzeFileAsync(IFormFile? file, CancellationToken ct)
+    {
+        if (file is null)
+        {
+            throw ValidationException.For("file", "Wybierz plik z wnioskiem.");
+        }
 
-    public async Task<IntakeResult> AnalyzeAsync(string text, Guid? fileId, string? fileName, CancellationToken ct)
+        var document = await reader.ReadAsync(file, ct);
+        await UnattachedFiles.DeleteStaleAsync(db, clock.Now, ct);
+        var stored = document.ToStoredFile(user.Id, clock.Now);
+        db.Files.Add(stored);
+        await db.SaveChangesAsync(ct);
+        return await AnalyzeAsync(document.Text, stored.Id, stored.FileName, ct);
+    }
+
+    public Task<IntakeResult> AnalyzeTextAsync(IntakeTextRequest request, CancellationToken ct) =>
+        AnalyzeAsync(request.Text.Replace("\r\n", "\n").Replace('\r', '\n').Trim(), null, null, ct);
+
+    private async Task<IntakeResult> AnalyzeAsync(string text, Guid? fileId, string? fileName, CancellationToken ct)
     {
         var today = clock.Today;
         var (_, caseNumber) = await caseNumbers.NextAsync(today.Year, ct);
         var dueOn = Deadlines.InitialDueDate(today);
         if (string.IsNullOrWhiteSpace(text))
         {
-            return new IntakeResult(
-                fileId, fileName, text, EmptySuggestion, caseNumber, today, dueOn, [], [], [EmptyTextWarning], false);
+            return RequestExtraction.Empty.ToResult(
+                fileId, fileName, text, caseNumber, today, dueOn, [], [], [EmptyTextWarning], false);
         }
 
         var heuristic = IntakeHeuristics.Analyze(
@@ -57,7 +66,7 @@ public sealed class IntakeAnalyzer(
 
         var embedding = await search.EmbedAsync(text, ct);
         var similar = await search.SearchAsync(
-            SearchEndpoints.SimilarCases(text, today, SimilarCasesLimit) with { Embedding = embedding }, ct);
+            SearchService.SimilarCasesQuery(text, today, SimilarCasesLimit) with { Embedding = embedding }, ct);
         var routing = await router.SuggestAsync(text, null, embedding, ct);
         var attempt = await extraction;
 
@@ -73,11 +82,10 @@ public sealed class IntakeAnalyzer(
             warnings.Add(NotARequestWarning);
         }
 
-        return new IntakeResult(
+        return suggestion.ToResult(
             fileId,
             fileName,
             text,
-            suggestion,
             caseNumber,
             today,
             dueOn,
@@ -87,17 +95,17 @@ public sealed class IntakeAnalyzer(
             attempt.Succeeded || routing.AiUsed);
     }
 
-    private static IntakeSuggestion Combine(IntakeExtraction model, IntakeSuggestion heuristic, DateOnly today)
+    private static RequestExtraction Combine(IntakeExtraction model, RequestExtraction heuristic, DateOnly today)
     {
         var items = (model.RequestedItems ?? [])
             .Select(i => Limit(i, IntakeHeuristics.MaxItemLength))
             .OfType<string>()
             .Take(IntakeHeuristics.MaxItems)
             .ToArray();
-        return new IntakeSuggestion(
+        return new RequestExtraction(
             IntakeHeuristics.CleanSubject(model.Subject) ?? heuristic.Subject,
             Limit(model.RequesterName, 300) ?? heuristic.RequesterName,
-            Limit(model.RequesterContact, 500) ?? heuristic.RequesterContact,
+            heuristic.RequesterContact ?? Limit(model.RequesterContact, 500),
             ParseChannel(model.ReplyChannel) ?? heuristic.ReplyChannel,
             ParseModelDate(model.RequestDate, today) ?? heuristic.RequestDate,
             items.Length > 0 ? items : heuristic.RequestedItems,
