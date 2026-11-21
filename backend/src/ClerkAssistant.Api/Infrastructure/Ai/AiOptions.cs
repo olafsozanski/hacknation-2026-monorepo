@@ -11,6 +11,9 @@ public sealed class AiOptions
     public string EmbeddingModel { get; set; } = "text-embedding-3-small";
     public bool IsLocal { get; set; }
     public int TimeoutSeconds { get; set; } = 120;
+    public float? Temperature { get; set; }
+    public int IndexingIntervalSeconds { get; set; } = 30;
+    public int IndexingBatchSize { get; set; } = 16;
 
     public bool IsConfigured => IsLocal || !string.IsNullOrWhiteSpace(ApiKey);
 }
