@@ -1,8 +1,8 @@
-# Przewodnik po aplikacji Asystent UDIP
+# Przewodnik po aplikacji SOIP — System Obsługi Informacji Publicznej
 
 ## O aplikacji i układ ekranu
 
-Asystent UDIP wspiera urzędników w obsłudze wniosków o udostępnienie informacji publicznej: rejestr z terminami, zapytania do wydziałów, projekt odpowiedzi z anonimizacją, archiwum i baza wiedzy. Program niczego nie wysyła sam (pism, e-maili, zapytań) — przygotowuje treści do skopiowania lub pobrania, a decyzję zawsze podejmuje urzędnik. Wszystko, co proponuje AI, jest sugestią do sprawdzenia.
+SOIP (System Obsługi Informacji Publicznej) wspiera urzędników w obsłudze wniosków o udostępnienie informacji publicznej: rejestr z terminami, zapytania do wydziałów, projekt odpowiedzi z anonimizacją, archiwum i baza wiedzy. Program niczego nie wysyła sam (pism, e-maili, zapytań) — przygotowuje treści do skopiowania lub pobrania, a decyzję zawsze podejmuje urzędnik. Wszystko, co proponuje AI, jest sugestią do sprawdzenia.
 
 - Nagłówek: znaczek trybu AI, przyciski wielkości tekstu A− / A / A+ / A++, „Wersja kontrastowa” i menu użytkownika (imię i nazwisko) z „Zmień hasło” i „Wyloguj się”.
 - Menu boczne: przycisk „Zarejestruj wniosek”, „Rejestr wniosków”, „Archiwum spraw”, „Anonimizacja”, „Baza wiedzy”, „Wydziały i biura”; administrator widzi też sekcję „Administracja” („Użytkownicy”, „Dziennik zdarzeń”). Na wąskim ekranie menu otwiera „Otwórz menu”.

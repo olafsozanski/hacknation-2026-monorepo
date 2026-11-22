@@ -37,11 +37,11 @@ afterEach(() => {
 describe('collectScreenContext', () => {
   it('describes what the clerk sees, excluding the assistant itself', () => {
     document.body.innerHTML = page
-    document.title = 'Rejestracja wniosku – Asystent UDIP'
+    document.title = 'Rejestracja wniosku – SOIP'
 
     expect(collectScreenContext('/wnioski/nowy?krok=2')).toEqual({
       path: '/wnioski/nowy?krok=2',
-      title: 'Rejestracja wniosku – Asystent UDIP',
+      title: 'Rejestracja wniosku – SOIP',
       heading: 'Rejestracja wniosku',
       dialog: 'Przedłużenie terminu',
       fieldErrors: [

@@ -1,4 +1,4 @@
-# Asystent UDIP — guide for contributors and AI agents
+# SOIP — System Obsługi Informacji Publicznej: guide for contributors and AI agents
 
 Internal tool for Bydgoszcz City Hall clerks handling requests for access to public information
 (UDIP). It keeps a register/calendar of requests with statutory deadlines, finds similar past cases,

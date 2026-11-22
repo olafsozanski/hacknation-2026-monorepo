@@ -50,10 +50,10 @@ export function LoginPage() {
             <AppMark boxSize="11" />
             <Box>
               <Text fontWeight="bold" fontSize="xl" lineHeight="1.1">
-                Asystent UDIP
+                SOIP
               </Text>
               <Text fontSize="sm" color="fg.muted">
-                Obsługa wniosków o udostępnienie informacji publicznej
+                System Obsługi Informacji Publicznej
               </Text>
             </Box>
           </Flex>

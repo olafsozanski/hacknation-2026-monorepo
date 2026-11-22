@@ -15,11 +15,11 @@ export function AppHeader({ onOpenMenu }: { onOpenMenu: () => void }) {
         <IconButton variant="ghost" aria-label="Otwórz menu" hideFrom="lg" onClick={onOpenMenu}>
           <Menu aria-hidden />
         </IconButton>
-        <RouterLink to="/" aria-label="Asystent UDIP – strona główna">
+        <RouterLink to="/" aria-label="SOIP — System Obsługi Informacji Publicznej – strona główna">
           <Flex align="center" gap="3">
             <AppMark boxSize="9" />
             <Text fontWeight="bold" fontSize="lg" lineHeight="1.1" whiteSpace="nowrap">
-              Asystent UDIP
+              SOIP
             </Text>
           </Flex>
         </RouterLink>

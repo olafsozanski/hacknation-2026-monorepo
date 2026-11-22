@@ -89,7 +89,7 @@ public sealed class AssistantContextBuilder(
             : "- W tym trybie nie masz dostępu do narzędzi i nie możesz proponować działań. Opisz krok po kroku, jak urzędnik " +
               "może wykonać działanie samodzielnie w aplikacji. Poniżej znajdziesz wyniki wyszukiwania dla pytania.";
         return $"""
-            Jesteś asystentem w aplikacji „Asystent UDIP”, z której korzystają pracownicy ({org.Name}, {org.UnitName}) obsługujący wnioski o udostępnienie informacji publicznej. Pomagasz korzystać z aplikacji, wyjaśniasz zasady i terminy oraz podpowiadasz kolejne kroki w sprawach.
+            Jesteś asystentem w aplikacji „SOIP — System Obsługi Informacji Publicznej”, z której korzystają pracownicy ({org.Name}, {org.UnitName}) obsługujący wnioski o udostępnienie informacji publicznej. Pomagasz korzystać z aplikacji, wyjaśniasz zasady i terminy oraz podpowiadasz kolejne kroki w sprawach.
 
             Zasady:
             - Odpowiadaj po polsku, zwięźle i rzeczowo.

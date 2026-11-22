@@ -1,4 +1,4 @@
-# Asystent UDIP
+# SOIP — System Obsługi Informacji Publicznej
 
 Narzędzie wspierające urzędników Urzędu Miasta Bydgoszczy w obsłudze wniosków o udostępnienie
 informacji publicznej (UDIP). Skraca przygotowanie odpowiedzi z kilku dni do kilkunastu minut:

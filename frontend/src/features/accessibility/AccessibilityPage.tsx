@@ -7,7 +7,7 @@ export function AccessibilityPage() {
       <PageHeader title="Deklaracja dostępności" />
       <Stack gap="5" maxW="3xl" lineHeight="1.7">
         <Text>
-          Asystent UDIP jest projektowany zgodnie z wytycznymi WCAG 2.1 na poziomie AA, wymaganymi przez ustawę z dnia 4
+          System Obsługi Informacji Publicznej (SOIP) jest projektowany zgodnie z wytycznymi WCAG 2.1 na poziomie AA, wymaganymi przez ustawę z dnia 4
           kwietnia 2019 r. o dostępności cyfrowej stron internetowych i aplikacji mobilnych podmiotów publicznych.
         </Text>
         <Heading as="h2" size="lg">

@@ -95,7 +95,7 @@ export function AppShell() {
             >
               <Flex gap="4" wrap="wrap" justify="space-between" fontSize="sm" color="fg.muted">
                 <Text>
-                  Asystent UDIP jest narzędziem pomocniczym. Program niczego nie wysyła samodzielnie — decyzję zawsze
+                  SOIP jest narzędziem pomocniczym. Program niczego nie wysyła samodzielnie — decyzję zawsze
                   podejmuje urzędnik.
                 </Text>
                 <Link asChild color="brand.fg" textDecoration="underline">
